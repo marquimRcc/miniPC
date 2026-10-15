@@ -45,25 +45,35 @@ Configurações a serem aplicadas na BIOS da placa-mãe (**JGINYUE B550i-GAMING*
 Abra o **AMD Software** -> Aba **Desempenho** -> **Ajuste** -> Selecione **Personalizado**:
 
 1. **Ajuste da GPU (Frequência e Tensão):**
-   * **Tensão Máxima (mV):** Definir em **`1120 mV`** *(Undevolting de -80mV em relação aos 1200mV originais)*.
-   * **Frequência Máxima (MHz):** Limitar em **`2600 MHz`** *(evita clocks excessivos que geram calor desnecessário)*.
+   * **Tensão Máxima (mV):** Definir em **`1100 mV`** *(Testado em bancada: 1050mV gerou artefatos/pipocos visuais; 1100mV é o ponto ideal 100% estável)*.
+   * **Frequência Máxima (MHz):** Limitar em **`2550 MHz`** *(evita clocks excessivos e reduz hotspot em mais de 24°C)*.
 
 2. **Ajuste da Ventoinha (Curva Agressiva - Foco em Temperatura Baixa):**
-   * **Zero RPM:** **DESATIVAR** *(evita calor passivo acumulado no gabinete quando em repouso)*.
+   * **Zero RPM:** **DESATIVAR** *(evita calor passivo acumulado no gabinete Metalfish T60)*.
    * **Pontos da Curva de Velocidade dos Fans:**
      * `45°C` -> **45%**
      * `55°C` -> **65%**
      * `65°C` -> **85%**
-     * `72°C+` -> **100%**
+     * `70°C+` -> **100%** *(mantém Hotspot abaixo de 78°C sob estresse máximo)*.
 
 3. **Ajuste de Energia:**
-   * **Limite de Energia (%):** `-8%` a `-10%` *(elimina picos que sobrecarregam fontes de alimentação)*.
+   * **Limite de Energia (%):** Manter em **`0%`** ou **`-5%`**.
 
 4. **Radeon Chill (Sincronizado com Monitor 60Hz):**
    * Em **Jogos** -> **Gráficos**, ative o **Radeon Chill**:
      * **FPS Mínimo:** `60`
      * **FPS Máximo:** `60` (ou `75` com folga de frametime)
      * *Resultado:* Economia imediata de 20°C a 30°C em jogos sem perda visual.
+
+---
+
+## 🌪️ 3.1 Curva de Ventoinha da CPU (Hardware Monitor na BIOS)
+
+Para manter o Ryzen 5 5600 frio no gabinete Metalfish T60:
+* **Temperatura 1:** `35°C` -> PWM **`120`** (~47%)
+* **Temperatura 2:** `45°C` -> PWM **`170`** (~67%)
+* **Temperatura 3:** `55°C` -> PWM **`220`** (~86%)
+* **Temperatura 4:** `65°C` -> PWM **`255`** (**100%** de rotação já aos 65°C)
 
 ---
 
