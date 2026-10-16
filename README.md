@@ -2,19 +2,22 @@
 
 Repositório dedicado à suíte de scripts, diagnósticos e parametrizações de BIOS/GPU para gabinetes compactos (*Small Form Factor* / Mini-ITX) com fluxo de ar restrito.
 
+> 📖 **[Clique aqui para ler o Relatório Técnico Consolidado de Hardware (Metalfish T60)](ANALISE_TECNICA_HARDWARE.md)** com todo o histórico de testes, diagnósticos de boot, memória, riser PCIe 3.0 e benchmarks térmicos.
+
 **Foco primordial:** **Baixíssimas temperaturas**, prevenção contra quedas de tensão/desarmes térmicos da fonte e estabilidade de inicialização do Windows 11.
 
 ---
 
-## 🖥️ 1. Perfil do Hardware
+## 🖥️ 1. Perfil do Hardware (Metalfish T60)
 
 | Componente | Modelo / Especificação | Desafio Térmico em Gabinete Compacto (SFF) |
 | :--- | :--- | :--- |
+| **Gabinete** | Metalfish T60 (Mini-ITX / SFF) | Volume interno reduzido; exige exaustão forte no topo. |
 | **Processador** | AMD Ryzen 5 5600 (6 Cores / 12 Threads) | Em stock atinge 88W e 1.35V+, aquecendo rapidamente sem fluxo direto de ar. |
 | **Placa de Vídeo** | AMD Radeon RX 7600 8GB | Arquitetura RDNA 3 com consumo de 165W-185W; gera calor concentrado no chassis. |
-| **Placa-Mãe** | JGINYUE B550i-GAMING (Mini-ITX) | Formato compacto com dissipação reduzida de VRM. |
-| **Armazenamento**| SSD NVMe M.2 1TB (XrayDisk) | Proximidade direta com a placa de vídeo e chipset. |
-| **Memória** | 16 GB DDR4 | Operando em Dual Channel. |
+| **Placa-Mãe** | JGINYUE B550i-GAMING (Mini-ITX) | Formato compacto com dissipação reduzida de VRM; BIOS JA500SCA. |
+| **Armazenamento**| SSD XrayDisk 1TB SATA | 100% Saudável (41°C, TRIM ativo, zero setores defeituosos). |
+| **Memória** | 16 GB DDR4 Corsair (DDR4-3200) | Operando em Single Channel (estabilidade de boot). |
 | **Monitor** | 1920x1080 @ 60 Hz | Taxa máxima de exibição de 60 FPS (quadros acima geram puro calor inútil). |
 
 ---
@@ -115,11 +118,24 @@ Script utilitário configurável na inicialização (`shell:startup`) ou agendad
 
 ---
 
-## 📥 Como Usar Após Formatação
+## 📥 Como Usar Após Formatação (Passo a Passo de 1 Clique)
 
-1. Clone ou baixe este repositório:
+Quando você formatar e reinstalar o Windows 11:
+
+1. **Baixe ou clone o repositório:**
    ```cmd
    git clone https://github.com/marquimRcc/miniPC.git
    ```
-2. Clique com botão direito em `Otimizar_Pos_Formatacao.bat` e selecione **"Executar como Administrador"**.
-3. Execute `Validar_Otimizacoes_SFF.bat` para confirmar que todos os 6 testes retornaram `[OK]`.
+   *(Ou simplesmente baixe o ZIP no GitHub e descompacte em qualquer pasta).*
+2. **Execute o Script Mestre:**
+   - Clique com o botão direito em **`Otimizar_Pos_Formatacao.bat`** e selecione **"Executar como Administrador"**.
+   - O script configurará automaticamente:
+     - Plano de energia com 5% de clock mínimo para o Ryzen 5600 esfriar em repouso.
+     - Bloqueio definitivo da Inicialização Rápida (*Fast Startup*).
+     - Ativação do Modo de Jogo e corte do GameDVR.
+     - Desativação do serviço redundante conflitante GameInput.
+     - Registro automático de **`Verificar_Reparar_Inicializacao.bat`** na inicialização do Windows (`shell:startup`).
+     - Limpeza de shaders e caches.
+3. **Validação:**
+   - Dê dois cliques em **`Validar_Otimizacoes_SFF.bat`** para confirmar que os 6 testes retornaram `[OK]`.
+

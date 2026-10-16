@@ -1,10 +1,15 @@
 @echo off
-title Otimizacao Agressiva SFF - Temperatura Baixa
-chcp 65001 >nul
+title Otimizacao SFF - Metalfish T60 (Ryzen 5600 + RX 7600)
+cd /d "%~dp0"
 
-:: Executa o script PowerShell ignorando politicas de execucao
+echo ==========================================================================
+echo    INICIANDO SUITE DE OTIMIZACAO SFF POS-FORMATACAO
+echo ==========================================================================
+echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Otimizar_Pos_Formatacao.ps1"
 
 echo.
-echo Pressione qualquer tecla para sair...
+echo ==========================================================================
+echo   Processo finalizado! Pressione qualquer tecla para fechar esta janela...
+echo ==========================================================================
 pause >nul

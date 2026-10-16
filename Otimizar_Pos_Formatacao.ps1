@@ -1,87 +1,107 @@
 <#
 .SYNOPSIS
-    Script de Otimizacao Agressiva para Gabinete SFF / Pouca Ventilacao
-    Hardware Alvo: AMD Ryzen 5 5600 + AMD Radeon RX 7600 (Placa-mae B550i)
-    Foco: Menor temperatura possivel sem perda de FPS em jogos.
+    Script Mestre de Otimizacao Agressiva para Gabinete SFF / Pouca Ventilacao
+    Hardware Alvo: AMD Ryzen 5 5600 + AMD Radeon RX 7600 (Gabinete Metalfish T60 / B550i)
+    Foco: Menor temperatura possivel, zero congelamentos de boot e estabilidade maxima.
 #>
 
-# Força codificação UTF-8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Clear-Host
 
 Write-Host "==========================================================================" -ForegroundColor Cyan
-Write-Host "    OTIMIZACAO AGRESSIVA DE TEMPERATURA E DESEMPENHO (SFF / ITX)          " -ForegroundColor Cyan
+Write-Host "    OTIMIZACAO SFF MESTRE — BAIXA TEMPERATURA & ESTABILIDADE              " -ForegroundColor Cyan
+Write-Host "    Metalfish T60 | Ryzen 5 5600 | RX 7600 | JGINYUE B550i                " -ForegroundColor Cyan
 Write-Host "==========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. PLANO DE ENERGIA EQUILIBRADO OTIMIZADO
-Write-Host "[1/6] Configurando Plano de Energia Equilibrado..." -ForegroundColor Yellow
+Write-Host "[1/7] Configurando Plano de Energia Equilibrado Otimizado..." -ForegroundColor Yellow
 $balancedGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-powercfg -setactive $balancedGuid
-# Permite que os núcleos desçam para 5% em repouso (reduz até 15°C em idle)
-powercfg -setacvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMIN 5
-powercfg -setacvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMAX 100
-powercfg -setacvalueindex $balancedGuid SUB_PCIEXPRESS pciepm 1
-powercfg -setactive $balancedGuid
-Write-Host "      -> Processador agora reduz voltagem e clock em repouso." -ForegroundColor Green
+powercfg /setactive $balancedGuid
+# Permite que a CPU Ryzen 5600 desca para 5% de clock em repouso (reduz ate 15C em idle)
+powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMIN 5
+powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMAX 100
+powercfg /setactive $balancedGuid
+Write-Host "      [OK] Processador agora reduz voltagem e clock em repouso." -ForegroundColor Green
 
-# 2. DESATIVACAO DA INICIALIZACAO RAPIDA (HIBERBOOT)
-Write-Host "[2/6] Desativando Inicializacao Rapida (Fast Startup)..." -ForegroundColor Yellow
+# 2. DESATIVACAO PERMANENTE DA INICIALIZACAO RAPIDA (FAST STARTUP)
+Write-Host "[2/7] Desativando Inicializacao Rapida (Fast Startup)..." -ForegroundColor Yellow
 try {
-    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-    Write-Host "      -> Fast Startup desativado (evita resets e congelamentos de boot)." -ForegroundColor Green
+    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+    Write-Host "      [OK] Fast Startup desativado (previne telas pretas e perda de undervolt)." -ForegroundColor Green
 } catch {
-    Write-Host "      -> (Requer admin para alterar HKLM, passe bat como admin se necessario)." -ForegroundColor Gray
+    Write-Host "      [AVISO] Requer privilegios de administrador para alterar HKLM." -ForegroundColor Yellow
 }
 
 # 3. OTIMIZACAO PARA JOGOS (MODO DE JOGO & GAMEDVR)
-Write-Host "[3/6] Otimizando Windows para Jogos..." -ForegroundColor Yellow
-# Modo de Jogo ativado
+Write-Host "[3/7] Otimizando Windows para Jogos (Latencia e GPU)..." -ForegroundColor Yellow
 if (!(Test-Path "HKCU:\Software\Microsoft\GameBar")) { New-Item -Path "HKCU:\Software\Microsoft\GameBar" -Force | Out-Null }
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -Value 1 -Type DWord
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AllowAutoGameMode" -Value 1 -Type DWord
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AllowAutoGameMode" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
 
-# Desativa gravação de fundo GameDVR (alivia o encoder de video da RX 7600)
+# Desativa gravacao de fundo GameDVR (alivia o encoder da RX 7600)
 if (!(Test-Path "HKCU:\System\GameConfigStore")) { New-Item -Path "HKCU:\System\GameConfigStore" -Force | Out-Null }
-Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 0 -Type DWord
+Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
 if (!(Test-Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR")) { New-Item -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR" -Force | Out-Null }
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR" -Name "AppCaptureEnabled" -Value 0 -Type DWord
-Write-Host "      -> Modo de Jogo ativado; GameDVR em segundo plano desativado." -ForegroundColor Green
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR" -Name "AppCaptureEnabled" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+Write-Host "      [OK] Modo de Jogo ativado; gravacao de fundo (GameDVR) desativada." -ForegroundColor Green
 
-# 4. REMOCAO DE PROCESSOS RESIDUAIS E TELEMETRIA
-Write-Host "[4/6] Desativando Widgets e Telemetria em segundo plano..." -ForegroundColor Yellow
-# Desativa Widgets na barra de tarefas (economiza 300MB a 500MB de RAM)
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+# 4. ELIMINACAO DE SERVICOS CONFLITANTES (GAMEINPUT REDIST)
+Write-Host "[4/7] Verificando servicos conflitantes..." -ForegroundColor Yellow
+$legacySvc = Get-Service -Name "GameInputRedistService" -ErrorAction SilentlyContinue
+if ($legacySvc) {
+    Stop-Service -Name "GameInputRedistService" -Force -ErrorAction SilentlyContinue
+    Set-Service -Name "GameInputRedistService" -StartupType Disabled -ErrorAction SilentlyContinue
+    Write-Host "      [OK] Servico legado GameInputRedistService desativado com sucesso." -ForegroundColor Green
+} else {
+    Write-Host "      [OK] Sem servicos redundantes detectados." -ForegroundColor Green
+}
 
-# Corta anúncios e sugestões silenciosas da Microsoft
-$cdm = "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
-Set-ItemProperty -Path $cdm -Name "SubscribedContent-338389Enabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Set-ItemProperty -Path $cdm -Name "SubscribedContent-338388Enabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Set-ItemProperty -Path $cdm -Name "SystemPaneSuggestionsEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Set-ItemProperty -Path $cdm -Name "SilentInstalledAppsEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Write-Host "      -> Widgets e servicos de coleta desativados." -ForegroundColor Green
+# 5. REGISTRAR AUTO-REPARO NA INICIALIZACAO DO WINDOWS (SHELL:STARTUP)
+Write-Host "[5/7] Configurando Auto-Reparo na Inicializacao do Windows..." -ForegroundColor Yellow
+$startupFolder = [System.Environment]::GetFolderPath('Startup')
+$repairBat = Join-Path $PSScriptRoot "Verificar_Reparar_Inicializacao.bat"
+$shortcutPath = Join-Path $startupFolder "Verificar_Reparar_Inicializacao.lnk"
 
-# 5. LIMPEZA DE CACHES E ARQUIVOS TEMPORARIOS
-Write-Host "[5/6] Limpando caches de Shaders, Temporarios e DNS..." -ForegroundColor Yellow
+if (Test-Path $repairBat) {
+    $wsh = New-Object -ComObject WScript.Shell
+    $shortcut = $wsh.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $repairBat
+    $shortcut.WorkingDirectory = $PSScriptRoot
+    $shortcut.Description = "Auto-reparo e diagnostico SFF na inicializacao"
+    $shortcut.WindowStyle = 7 # Minimized
+    $shortcut.Save()
+    Write-Host "      [OK] Auto-reparo registrado na inicializacao (shell:startup)." -ForegroundColor Green
+} else {
+    Write-Host "      [INFO] Script de reparo nao encontrado no diretorio atual." -ForegroundColor Gray
+}
+
+# 6. LIMPEZA DE CACHES E TEMPORARIOS
+Write-Host "[6/7] Limpando caches de shaders, temporarios e DNS..." -ForegroundColor Yellow
 Remove-Item -Path "$env:LOCALAPPDATA\D3DSCache\*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:LOCALAPPDATA\AMD\CN\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
 Clear-RecycleBin -Force -Confirm:$false -ErrorAction SilentlyContinue
 Clear-DnsClientCache
-Write-Host "      -> Caches e lixeira limpos com sucesso." -ForegroundColor Green
+Write-Host "      [OK] Caches e temporarios limpos com sucesso." -ForegroundColor Green
 
-# 6. CONFIGURAR REINICIALIZACAO AUTOMATICA DO EXPLORER
-Write-Host "[6/6] Reiniciando Windows Explorer para aplicar alteracoes visuais..." -ForegroundColor Yellow
-Stop-Process -Name "explorer" -Force
-Start-Sleep -Seconds 2
-Write-Host "      -> Explorer reiniciado com sucesso." -ForegroundColor Green
+# 7. DESATIVAR TELEMETRIAS E WIDGETS PESADOS
+Write-Host "[7/7] Desativando widgets e telemetria pesada..." -ForegroundColor Yellow
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+$cdm = "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+Set-ItemProperty -Path $cdm -Name "SubscribedContent-338389Enabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdm -Name "SubscribedContent-338388Enabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdm -Name "SystemPaneSuggestionsEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdm -Name "SilentInstalledAppsEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Write-Host "      [OK] Widgets e sugestoes em segundo plano desativados." -ForegroundColor Green
 
 Write-Host ""
 Write-Host "==========================================================================" -ForegroundColor Green
 Write-Host "        OTIMIZACAO DO WINDOWS CONCLUIDA COM SUCESSO!                      " -ForegroundColor Green
 Write-Host "==========================================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Recomendacoes de Hardware (BIOS e GPU):" -ForegroundColor Cyan
-Write-Host "1. BIOS JGINYUE B550i: Ativar PBO -> Curve Optimizer: Negative 20 -> Thermal Limit: 75C"
-Write-Host "2. AMD Adrenalin: Desativar Zero RPM -> Curva agressiva (100% aos 72C) -> Radeon Chill a 60 FPS"
+Write-Host "Recomendacoes de Hardware (Consulte ANALISE_TECNICA_HARDWARE.md):" -ForegroundColor Cyan
+Write-Host "1. BIOS JGINYUE B550i: PBO -> Curve Optimizer: Negative 10/20 -> Limite: 75C"
+Write-Host "2. Curva CPU BIOS: 35C->120 | 45C->170 | 55C->220 | 65C->255 (100% aos 65C)"
+Write-Host "3. AMD Adrenalin (GPU): Max 2550 MHz | 1100 mV | Fan 100% aos 70C | Chill 60 FPS"
 Write-Host ""
