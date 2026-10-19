@@ -6,9 +6,9 @@
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-$logDir = "C:\Users\marcos\Otimizacao_SFF\Logs"
+$logDir = Join-Path $PSScriptRoot "Logs"
 if (!(Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
-$logFile = "$logDir\Inicializacao_Historico.log"
+$logFile = Join-Path $logDir "Inicializacao_Historico.log"
 
 $dataHora = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 $header = "[$dataHora] === INICIANDO VERIFICACAO DO SISTEMA NO BOOT ==="
@@ -82,12 +82,13 @@ try {
     Add-Content -Path $logFile -Value "[$dataHora] [BOOT] Erro ao consultar log de desligamento: $_"
 }
 
-# 4. GARANTIR INICIALIZACAO RAPIDA (FAST STARTUP) DESATIVADA
-Write-Host "[4/5] Garantindo prevencao contra travamentos de boot (Hiberboot)..." -ForegroundColor Yellow
+# 4. GARANTIR INICIALIZACAO RAPIDA (FAST STARTUP) E HIBERNACAO DESATIVADAS (PRIORIDADE ANTI-TELA PRETA)
+Write-Host "[4/5] Garantindo prevencao contra travamentos de boot (Hiberboot/Hibernacao)..." -ForegroundColor Yellow
 try {
+    powercfg /hibernate off
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA OK] Fast Startup garantido em 0 (Desativado)."
-    Write-Host "      -> Fast Startup garantido em 0 (Desativado)." -ForegroundColor Green
+    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA OK] Fast Startup e Hibernacao garantidos em 0 (Desativado)."
+    Write-Host "      -> Fast Startup e Hibernacao garantidos em 0 (Desativados)." -ForegroundColor Green
 } catch {
     Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA] Requer admin para alterar Hiberboot."
 }

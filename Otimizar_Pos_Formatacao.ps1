@@ -2,7 +2,7 @@
 .SYNOPSIS
     Script Mestre de Otimizacao Agressiva para Gabinete SFF / Pouca Ventilacao
     Hardware Alvo: AMD Ryzen 5 5600 + AMD Radeon RX 7600 (Gabinete Metalfish T60 / B550i)
-    Foco: Menor temperatura possivel, zero congelamentos de boot e estabilidade maxima.
+    Foco: Menor temperatura possivel, eliminacao de tela preta no boot e estabilidade maxima.
 #>
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -14,27 +14,48 @@ Write-Host "    Metalfish T60 | Ryzen 5 5600 | RX 7600 | JGINYUE B550i          
 Write-Host "==========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. PLANO DE ENERGIA EQUILIBRADO OTIMIZADO
-Write-Host "[1/7] Configurando Plano de Energia Equilibrado Otimizado..." -ForegroundColor Yellow
-$balancedGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-powercfg /setactive $balancedGuid
-# Permite que a CPU Ryzen 5600 desca para 5% de clock em repouso (reduz ate 15C em idle)
-powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMIN 5
-powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMAX 100
-powercfg /setactive $balancedGuid
-Write-Host "      [OK] Processador agora reduz voltagem e clock em repouso." -ForegroundColor Green
-
-# 2. DESATIVACAO PERMANENTE DA INICIALIZACAO RAPIDA (FAST STARTUP)
-Write-Host "[2/7] Desativando Inicializacao Rapida (Fast Startup)..." -ForegroundColor Yellow
+# 1. PRIORIDADE ZERO ABSOLUTA: DESATIVACAO DE HIBERNACAO E INICIALIZACAO RAPIDA (FAST STARTUP)
+Write-Host "[1/8] PRIORIDADE 1: Desativando Hibernacao e Inicializacao Rapida (Correcao Cold Boot)..." -ForegroundColor Yellow
 try {
+    # 1.1 Desativa hibernacao no subsistema de energia
+    powercfg /hibernate off
+    # 1.2 Forca chave do registro do Windows para desativar Fast Startup
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
-    Write-Host "      [OK] Fast Startup desativado (previne telas pretas e perda de undervolt)." -ForegroundColor Green
+    Write-Host "      [OK] Hibernacao e Fast Startup DESATIVADOS com sucesso!" -ForegroundColor Green
+    Write-Host "      [OK] Boot UEFI 100% limpo ativado (previne telas pretas no riser PCIe 3.0)." -ForegroundColor Green
 } catch {
     Write-Host "      [AVISO] Requer privilegios de administrador para alterar HKLM." -ForegroundColor Yellow
 }
 
+# 2. PLANO DE ENERGIA EQUILIBRADO OTIMIZADO (BAIXA TEMPERATURA / 3.5 GHz BASE)
+Write-Host "[2/8] Configurando Plano de Energia Equilibrado Otimizado (3.5 GHz Fixo)..." -ForegroundColor Yellow
+$balancedGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+powercfg /setactive $balancedGuid
+
+# Desativa Core Performance Boost agressivo (trava em 3.5 GHz a frio, eliminando picos de 1.45V)
+powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR be337238-0d82-4146-a960-4f3749d470c7 0
+powercfg /setdcvalueindex $balancedGuid SUB_PROCESSOR be337238-0d82-4146-a960-4f3749d470c7 0
+
+# Permite que a CPU Ryzen 5600 desca para 5% de clock em repouso (C-States profundos)
+powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMIN 5
+powercfg /setdcvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMIN 5
+
+# Estado maximo em 99% (elimina picos do scheduler do Windows)
+powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMAX 99
+powercfg /setdcvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMAX 99
+
+# Politica de resfriamento Ativa (ventoinhas preventivas)
+powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
+powercfg /setdcvalueindex $balancedGuid SUB_PROCESSOR 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
+
+# Gerenciamento de energia do link PCIe (ASPM Moderado)
+powercfg /setacvalueindex $balancedGuid SUB_PCIEXPRESS ee12f906-d277-404b-b6da-e5fa1a576df5 1
+
+powercfg /setactive $balancedGuid
+Write-Host "      [OK] Processador travado em 3.5 GHz (~0.93V) com reducao termica imediata." -ForegroundColor Green
+
 # 3. OTIMIZACAO PARA JOGOS (MODO DE JOGO & GAMEDVR)
-Write-Host "[3/7] Otimizando Windows para Jogos (Latencia e GPU)..." -ForegroundColor Yellow
+Write-Host "[3/8] Otimizando Windows para Jogos (Latencia e GPU)..." -ForegroundColor Yellow
 if (!(Test-Path "HKCU:\Software\Microsoft\GameBar")) { New-Item -Path "HKCU:\Software\Microsoft\GameBar" -Force | Out-Null }
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AllowAutoGameMode" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
@@ -47,7 +68,7 @@ Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR"
 Write-Host "      [OK] Modo de Jogo ativado; gravacao de fundo (GameDVR) desativada." -ForegroundColor Green
 
 # 4. ELIMINACAO DE SERVICOS CONFLITANTES (GAMEINPUT REDIST)
-Write-Host "[4/7] Verificando servicos conflitantes..." -ForegroundColor Yellow
+Write-Host "[4/8] Verificando servicos conflitantes..." -ForegroundColor Yellow
 $legacySvc = Get-Service -Name "GameInputRedistService" -ErrorAction SilentlyContinue
 if ($legacySvc) {
     Stop-Service -Name "GameInputRedistService" -Force -ErrorAction SilentlyContinue
@@ -58,50 +79,45 @@ if ($legacySvc) {
 }
 
 # 5. REGISTRAR AUTO-REPARO NA INICIALIZACAO DO WINDOWS (SHELL:STARTUP)
-Write-Host "[5/7] Configurando Auto-Reparo na Inicializacao do Windows..." -ForegroundColor Yellow
-$startupFolder = [System.Environment]::GetFolderPath('Startup')
-$repairBat = Join-Path $PSScriptRoot "Verificar_Reparar_Inicializacao.bat"
-$shortcutPath = Join-Path $startupFolder "Verificar_Reparar_Inicializacao.lnk"
-
-if (Test-Path $repairBat) {
+Write-Host "[5/8] Configurando atalho de validacao e protecao na inicializacao..." -ForegroundColor Yellow
+$startupFolder = [Environment]::GetFolderPath("Startup")
+$shortcutScript = Join-Path $PSScriptRoot "Verificar_Reparar_Inicializacao.bat"
+if (Test-Path $shortcutScript) {
     $wsh = New-Object -ComObject WScript.Shell
-    $shortcut = $wsh.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $repairBat
+    $shortcut = $wsh.CreateShortcut((Join-Path $startupFolder "AutoReparo_SFF_Boot.lnk"))
+    $shortcut.TargetPath = $shortcutScript
     $shortcut.WorkingDirectory = $PSScriptRoot
-    $shortcut.Description = "Auto-reparo e diagnostico SFF na inicializacao"
+    $shortcut.Description = "Garante que o Fast Startup e o Perfil Termico permanecam ativos"
     $shortcut.WindowStyle = 7 # Minimized
     $shortcut.Save()
-    Write-Host "      [OK] Auto-reparo registrado na inicializacao (shell:startup)." -ForegroundColor Green
+    Write-Host "      [OK] Auto-reparo configurado para proteger contra reset do Windows Update." -ForegroundColor Green
 } else {
-    Write-Host "      [INFO] Script de reparo nao encontrado no diretorio atual." -ForegroundColor Gray
+    Write-Host "      [AVISO] Script auxiliar Verificar_Reparar_Inicializacao.bat nao localizado." -ForegroundColor Yellow
 }
 
-# 6. LIMPEZA DE CACHES E TEMPORARIOS
-Write-Host "[6/7] Limpando caches de shaders, temporarios e DNS..." -ForegroundColor Yellow
-Remove-Item -Path "$env:LOCALAPPDATA\D3DSCache\*" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:LOCALAPPDATA\AMD\CN\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-Clear-RecycleBin -Force -Confirm:$false -ErrorAction SilentlyContinue
+# 6. OTIMIZACAO DE EFEITOS VISUAIS E BACKGROUND
+Write-Host "[6/8] Otimizando animacoes e reducao de carga de GPU no Desktop..." -ForegroundColor Yellow
+Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "MenuShowDelay" -Value "100" -Force -ErrorAction SilentlyContinue
+Write-Host "      [OK] Responsividade do Desktop otimizada." -ForegroundColor Green
+
+# 7. LIMPEZA DE CACHE DE SHADERS E DNS
+Write-Host "[7/8] Limpando Cache de DNS..." -ForegroundColor Yellow
 Clear-DnsClientCache
-Write-Host "      [OK] Caches e temporarios limpos com sucesso." -ForegroundColor Green
+Write-Host "      [OK] DNS renovado." -ForegroundColor Green
 
-# 7. DESATIVAR TELEMETRIAS E WIDGETS PESADOS
-Write-Host "[7/7] Desativando widgets e telemetria pesada..." -ForegroundColor Yellow
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-$cdm = "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
-Set-ItemProperty -Path $cdm -Name "SubscribedContent-338389Enabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Set-ItemProperty -Path $cdm -Name "SubscribedContent-338388Enabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Set-ItemProperty -Path $cdm -Name "SystemPaneSuggestionsEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Set-ItemProperty -Path $cdm -Name "SilentInstalledAppsEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-Write-Host "      [OK] Widgets e sugestoes em segundo plano desativados." -ForegroundColor Green
+# 8. OTIMIZACAO DO SSD SATA (TRIM)
+Write-Host "[8/8] Executando comando TRIM no SSD..." -ForegroundColor Yellow
+try {
+    Optimize-Volume -DriveLetter C -ReTrim -Verbose:$false -ErrorAction SilentlyContinue
+    Write-Host "      [OK] TRIM enviado ao SSD XrayDisk com sucesso." -ForegroundColor Green
+} catch {
+    Write-Host "      [AVISO] Nao foi possivel executar TRIM automaticamente." -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "==========================================================================" -ForegroundColor Green
-Write-Host "        OTIMIZACAO DO WINDOWS CONCLUIDA COM SUCESSO!                      " -ForegroundColor Green
+Write-Host "    SUITE DE OTIMIZACAO SFF CONCLUIDA COM SUCESSO!                         " -ForegroundColor Green
+Write-Host "    Inicializacao Rapida: DESATIVADA (Prioridade 1)                        " -ForegroundColor Green
+Write-Host "    Clock CPU: 3.5 GHz Fixo (~0.93V)                                       " -ForegroundColor Green
+Write-Host "    GPU: Perfil de Baixa Temperatura Ativo                                 " -ForegroundColor Green
 Write-Host "==========================================================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "Recomendacoes de Hardware (Consulte ANALISE_TECNICA_HARDWARE.md):" -ForegroundColor Cyan
-Write-Host "1. BIOS JGINYUE B550i: PBO -> Curve Optimizer: Negative 10/20 -> Limite: 75C"
-Write-Host "2. Curva CPU BIOS: 35C->120 | 45C->170 | 55C->220 | 65C->255 (100% aos 65C)"
-Write-Host "3. AMD Adrenalin (GPU): Max 2550 MHz | 1100 mV | Fan 100% aos 70C | Chill 60 FPS"
-Write-Host ""

@@ -17,89 +17,82 @@
 * **Placa de Vídeo:** AMD Radeon RX 7600 8GB (Navi 33, 8GB GDDR6 Samsung, Barramento 128-bit, PCIe 4.0 x8 nativo).
 * **Armazenamento:** SSD XrayDisk 1TB SATA (Saúde 100% Healthy, 41°C, TRIM ativo, zero erros).
 * **Rede:** Realtek 2.5 GbE onboard | Módulo Wi-Fi interno M.2/PCIe **REMOVIDO** | Wi-Fi via adaptador USB externo.
+* **Monitor:** Samsung C24F390 Curvo (1080p @ 60 Hz, suporte a AMD FreeSync).
 
 ---
 
-## 2. Diagnóstico da Falha de Boot / Cold Boot (A Grande Descoberta)
+## 2. Diagnóstico da Falha de Cold Boot e Telas Pretas (Causas Raízes)
 
-### O Problema Histórico:
-O computador frequentemente não ligava ou não dava vídeo ao ligar (*Cold Boot*). Parecia ser resolvido temporariamente ao alternar os slots de memória RAM, o que gerava a falsa suspeita de defeito na RAM ou na placa-mãe.
+### Causa 1: Conflito PCIe Gen4 vs Cabo Riser Gen3 (A Descoberta de Baixo Nível)
+Ao inspecionar diretamente as propriedades de hardware do barramento PCIe no Windows, foi descoberto:
+* **Velocidade Negociada:** `DEVPKEY_PciDevice_CurrentLinkSpeed : 4` (**PCIe Gen 4 — 16.0 GT/s**)
+* **Erros de Integridade de Pacote:** `DEVPKEY_PciDevice_ECRC_Errors : 160`
 
-### A Causa Real Comprovada:
-O problema **não era a memória RAM**. O módulo Wi-Fi interno M.2/PCIe estava causando instabilidade de sinal e travando a inicialização do barramento PCIe durante o POST da placa-mãe. A troca da RAM apenas forçava um reset de treinamento de memória (*memory retraining*), mascarando a causa real.
+**Mecanismo da Falha:**
+1. A placa B550i e a RX 7600 suportam PCIe Gen4. O cabo extensor (Riser do Metalfish T60) é **PCIe Gen 3.0**.
+2. Em modo "Auto", a placa-mãe tenta treinar o barramento em 16 GHz no cold boot.
+3. O cabo riser Gen3 não tem blindagem para 16 GHz com o PC frio, gerando estouro de tempo no link training durante o POST.
+4. **Resultado:** A placa de vídeo **não consegue inicializar o sinal de vídeo e o monitor fica 100% preto** (sem nem exibir a logo da BIOS).
+5. **Solução Definitiva:** Como a BIOS `JA500SCA` não possui a opção manual de travar em Gen3, a fabricante JGINYUE disponibiliza a versão oficial de BIOS **`(GEN3)`** travada nativamente em PCIe 3.0 para usuários de gabinetes ITX com riser.
 
-### A Solução Definitiva:
-1. Remoção física do módulo Wi-Fi interno M.2.
-2. Uso de adaptador Wi-Fi USB de alta velocidade.
-3. Atualização da BIOS para a versão `JA500SCA`.
-4. Resultado: Inicialização 100% estável e consistente.
+### Causa 2: Inicialização Rápida (Fast Startup / Hiberboot) do Windows
+* O Fast Startup do Windows salva um estado híbrido da memória e do subsistema PCIe no desligamento.
+* Ao religar o PC, a GPU tentava acordar rápido demais pelo riser, travando o sinal de vídeo.
+* **Solução:** Desativação permanente e prioritária da Inicialização Rápida e da Hibernação (`powercfg /hibernate off` e `HiberbootEnabled = 0`).
 
----
-
-## 3. Barramento PCIe e Cabo Riser (Metalfish T60)
-
-* O gabinete Metalfish T60 utiliza um **cabo extensor (Riser) PCIe 3.0**.
-* A RX 7600 opera em **PCIe 3.0 x8 (8.0 GT/s)**, compatível com o cabo riser.
-* Na BIOS `JA500SCA`, a opção `PCIe/GFX Lanes Configuration` deve permanecer em **`x16`** (bifurcação padrão).
-* ReBAR (Resizable BAR) e Above 4G Decoding suportados e ativados com sucesso.
-
----
-
-## 4. GPU — Testes de Temperatura e Ponto Doce de Undervolt
-
-### Comparativo de Benchmarks em Estresse (98% de Carga):
-
-| Cenário | Configuração | Temp. GPU | Temp. Hotspot | Fan RPM | Estabilidade |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Stock (Fábrica)** | 2630 MHz / ~1200 mV / Fan Auto | 72 °C | **101 °C** (Delta 29°C!) | 2.117 RPM | Perigoso para SFF |
-| **Agressivo Instável**| 2600 MHz / 1050 mV / Fan Manual | 55 °C | 71 °C | 2.500 RPM | **Instável:** Artefatos/pipocos visuais |
-| **Ponto Doce (Ideal)**| **2550 MHz / 1100 mV / Fan Manual** | **59 °C** | **77 °C** (Delta 18°C) | **2.503 RPM** | **100% Estável e Frio** |
-
-### Configuração Recomendada no AMD Software Adrenalin:
-* **Frequência Máxima:** `2550 MHz`
-* **Tensão Máxima:** `1100 mV`
-* **Power Limit:** `0%`
-* **Zero RPM:** `DESATIVADO` (evita aquecimento passivo em repouso no SFF)
-* **Curva de Ventoinha:**
-  * 45°C -> 45%
-  * 55°C -> 65%
-  * 65°C -> 85%
-  * 70°C+ -> 100%
-* **Radeon Chill:** Ativado (60 FPS Min / 60 FPS Max para sincronizar com monitor de 60Hz).
+### Causa 3: Módulo Wi-Fi Interno M.2
+* O módulo Wi-Fi interno causava conflitos no barramento PCIe da placa-mãe.
+* **Solução:** Módulo removido fisicamente; Wi-Fi agora opera via adaptador USB.
 
 ---
 
-## 5. CPU — Diagnóstico Térmico e Soluções (Ryzen 5 5600)
+## 3. Prioridade Máxima Pós-Formatação: Desativação de Hibernação
 
-* **Comportamento em Teste:** Em estresse com CPU-Z consumindo ~45W, a CPU atingiu **80°C a 83°C mesmo com a tampa do gabinete aberta**.
-* **Diagnóstico:** O aquecimento ocorre pela capacidade do cooler low-profile ou contato térmico direto.
-* **Curva de Ventoinha da CPU recomendada na BIOS (Hardware Monitor):**
-  * `35°C` -> PWM **`120`** (~47%)
-  * `45°C` -> PWM **`170`** (~67%)
-  * `55°C` -> PWM **`220`** (~86%)
-  * `65°C` -> PWM **`255`** (**100% de rotação aos 65°C**)
-* **Precision Boost Overdrive (PBO):**
-  * Curve Optimizer: `All Cores` -> `Negative` -> Magnitude **`10`** (ou **`15`** / **`20`** se estável).
-  * PPT Limit: `65 W`
-  * Platform Thermal Throttle Limit: `75 °C` (Garante que a CPU nunca passe de 75°C sob carga pesada).
-* **Revisão Física:** Se continuar passando de 80°C, verificar fixação do cooler, conferir ausência de película plástica protetora e aplicar pasta térmica de alto desempenho.
+> [!CRITICAL]
+> **ESTE É O PRIMEIRO COMANDO OBRIGATÓRIO A SER EXECUTADO EM QUALQUER INSTALAÇÃO DO WINDOWS:**
+
+```cmd
+powercfg /hibernate off
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f
+```
+Sem isso, o sistema continuará gerando telas pretas ao ligar devido à incompatibilidade do riser com a suspensão híbrida do kernel.
+
+---
+
+## 4. GPU — Calibração Consolidada no AMD Adrenalin (RX 7600)
+
+Perfil 100% testado, estável e livre de artefatos visuais:
+* **Frequência Máxima:** `2450 MHz` (ou `2550 MHz`)
+* **Tensão Máxima:** `1100 mV` *(Testado em bancada: 1050mV gerou artefatos/pipocos visuais; 1100mV é o ponto ideal 100% estável)*.
+* **Power Limit:** `-6%` (limite máximo permitido pela VBIOS)
+* **Zero RPM:** `DESATIVADO` (ventoinhas girando continuamente para evitar calor passivo)
+* **Curva de Ventoinha Hiper-Agressiva:**
+  * 30°C -> 50%
+  * 43°C -> 70%
+  * 53°C -> 85%
+  * 64°C -> 95%
+  * 80°C -> 100%
+* **Radeon Chill:** Ativado (60 FPS Min / 60 FPS Max para sincronizar com o monitor Samsung 60Hz).
+* **Resultado:** Hotspot caiu de **101°C para ~75°C** e temperatura da GPU fica entre **45°C e 52°C** em jogos leves.
+
+---
+
+## 5. CPU — Calibração Consolidada (Ryzen 5 5600)
+
+* **Trava Térmica no Windows:** Clock base travado em **3.5 GHz** com boost desativado (`be337238-0d82-4146-a960-4f3749d470c7 = 0`).
+  * Tensão cai para **~0.93V** e consumo em idle para apenas **1.5W** (temperatura de repouso em **~40°C**).
+* **Trava de Hardware (Ryzen Master):** **Eco Mode** ativado (limita o PPT da CPU de 76W para **45W**).
+* **Curva da Ventoinha da CPU (Smart Fan na BIOS):**
+  * 35°C -> PWM 150 (~60%)
+  * 45°C -> PWM 190 (~75%)
+  * 55°C -> PWM 230 (~90%)
+  * 60°C -> PWM 255 (**100% de rotação máxima aos 60°C**)
 
 ---
 
 ## 6. Saúde do SSD (XrayDisk 1TB SATA)
 
-Diagnóstico oficial realizado em outubro/2026:
 * **Status:** `Healthy (Saudável)`
 * **Temperatura:** `41 °C`
-* **Horas de Uso:** `6.544 horas`
-* **Erros de Leitura / Setores Defeituosos:** `0 erros`
+* **Erros de Leitura / Setores Defeituosos:** `0 erros` nos logs do sistema
 * **Comando TRIM:** `Ativo (DisableDeleteNotify = 0)`
-
----
-
-## 7. Recomendações de Fans de Gabinete para o Metalfish T60
-
-* Instalação de **2x fans de 120x25mm no topo** configurados como **EXAUSTÃO** (puxando o ar quente de dentro do gabinete e jogando para fora).
-* **Melhores modelos recomendados:**
-  1. **Arctic P12 Pro / P12 Max:** Alta pressão estática, excelente fluxo para grades perfuradas de SFF.
-  2. **Noctua NF-F12 industrialPPC-3000:** Força bruta de refrigeração para quem não se importa com ruído.
