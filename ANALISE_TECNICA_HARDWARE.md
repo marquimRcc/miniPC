@@ -70,6 +70,8 @@ Sem isso, o sistema continuará gerando telas pretas ao ligar devido à incompat
 
 ## 4. GPU — Calibração Consolidada no AMD Adrenalin (RX 7600)
 
+> **Perfil XML pronto incluído:** O arquivo `Curva_Fria_RX7600.xml` na raiz deste repositório contém todas as definições abaixo prontas para importação no AMD Adrenalin (Aba Desempenho > Ajuste > Importar Perfil), derrubando a temperatura em até 10°C de forma imediata.
+
 Perfil 100% testado, estável e livre de artefatos visuais:
 * **Frequência Máxima:** `2450 MHz` (ou `2550 MHz`)
 * **Tensão Máxima:** `1100 mV` *(Testado em bancada: 1050mV gerou artefatos/pipocos visuais; 1100mV é o ponto ideal 100% estável)*.

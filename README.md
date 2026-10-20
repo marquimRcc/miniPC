@@ -69,7 +69,17 @@ powercfg /setactive SCHEME_CURRENT
 
 ## 🌪️ 4. Ajustes de GPU Recomendados (AMD Software: Adrenalin)
 
-Abra o **AMD Software** -> Aba **Desempenho** -> **Ajuste** -> Selecione **Personalizado**:
+> [!TIP]
+> **Importação Automática em 1 Clique com o Perfil Pronto:**  
+> Este repositório inclui o arquivo oficial pronto **[`Curva_Fria_RX7600.xml`](Curva_Fria_RX7600.xml)**.  
+> Para aplicar tudo de uma vez sem precisar configurar nada manualmente:
+> 1. Abra o **AMD Software: Adrenalin Edition**.
+> 2. Vá na aba **Desempenho** ➔ **Ajuste**.
+> 3. No canto superior direito, clique no botão **Importar perfil** (ícone de seta/pasta).
+> 4. Selecione o arquivo `Curva_Fria_RX7600.xml`.
+> 5. **Resultado:** Curva de ventoinha agressiva, limite de energia em -6% e clock controlado são aplicados imediatamente, derrubando a temperatura da GPU em até **10°C**!
+
+Caso prefira ajustar manualmente, abra o **AMD Software** -> Aba **Desempenho** -> **Ajuste** -> Selecione **Personalizado**:
 
 1. **Ajuste da GPU (Frequência e Tensão):**
    * **Tensão Máxima (mV):** Definir em **`1100 mV`** *(Testado em bancada: 1050mV gerou artefatos/pipocos visuais; 1100mV é o ponto ideal 100% estável)*.
