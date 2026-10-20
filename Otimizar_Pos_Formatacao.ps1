@@ -14,14 +14,17 @@ Write-Host "    Metalfish T60 | Ryzen 5 5600 | RX 7600 | JGINYUE B550i          
 Write-Host "==========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. PRIORIDADE ZERO ABSOLUTA: DESATIVACAO DE HIBERNACAO E INICIALIZACAO RAPIDA (FAST STARTUP)
-Write-Host "[1/8] PRIORIDADE 1: Desativando Hibernacao e Inicializacao Rapida (Correcao Cold Boot)..." -ForegroundColor Yellow
+# 1. PRIORIDADE ZERO ABSOLUTA: DESATIVACAO DE HIBERNACAO, FAST STARTUP E SUSPENSAO AUTOMATICA
+Write-Host "[1/8] PRIORIDADE 1: Desativando Hibernacao, Fast Startup e Suspensao (Prevencao Tela Preta)..." -ForegroundColor Yellow
 try {
     # 1.1 Desativa hibernacao no subsistema de energia
     powercfg /hibernate off
     # 1.2 Forca chave do registro do Windows para desativar Fast Startup
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
-    Write-Host "      [OK] Hibernacao e Fast Startup DESATIVADOS com sucesso!" -ForegroundColor Green
+    # 1.3 Desativa suspensao automatica (evita queda de sinal PCIe ao acordar no Riser)
+    powercfg /change standby-timeout-ac 0
+    powercfg /change standby-timeout-dc 0
+    Write-Host "      [OK] Hibernacao, Fast Startup e Suspensao Automatica DESATIVADOS!" -ForegroundColor Green
     Write-Host "      [OK] Boot UEFI 100% limpo ativado (previne telas pretas no riser PCIe 3.0)." -ForegroundColor Green
 } catch {
     Write-Host "      [AVISO] Requer privilegios de administrador para alterar HKLM." -ForegroundColor Yellow
@@ -48,8 +51,9 @@ powercfg /setdcvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMAX 99
 powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
 powercfg /setdcvalueindex $balancedGuid SUB_PROCESSOR 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
 
-# Gerenciamento de energia do link PCIe (ASPM Moderado)
-powercfg /setacvalueindex $balancedGuid SUB_PCIEXPRESS ee12f906-d277-404b-b6da-e5fa1a576df5 1
+# Gerenciamento de energia do link PCIe (ASPM Desligado — previne Watchdog LiveKernelEvent 1b0 no Riser)
+powercfg /setacvalueindex $balancedGuid SUB_PCIEXPRESS ee12f906-d277-404b-b6da-e5fa1a576df5 0
+powercfg /setdcvalueindex $balancedGuid SUB_PCIEXPRESS ee12f906-d277-404b-b6da-e5fa1a576df5 0
 
 powercfg /setactive $balancedGuid
 Write-Host "      [OK] Processador travado em 3.5 GHz (~0.93V) com reducao termica imediata." -ForegroundColor Green

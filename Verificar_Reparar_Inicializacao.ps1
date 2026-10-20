@@ -82,15 +82,19 @@ try {
     Add-Content -Path $logFile -Value "[$dataHora] [BOOT] Erro ao consultar log de desligamento: $_"
 }
 
-# 4. GARANTIR INICIALIZACAO RAPIDA (FAST STARTUP) E HIBERNACAO DESATIVADAS (PRIORIDADE ANTI-TELA PRETA)
-Write-Host "[4/5] Garantindo prevencao contra travamentos de boot (Hiberboot/Hibernacao)..." -ForegroundColor Yellow
+# 4. GARANTIR FAST STARTUP, HIBERNACAO E SUSPENSAO DESATIVADAS (ANTI-TELA PRETA NO RISER)
+Write-Host "[4/5] Garantindo prevencao contra travamentos de boot e sono (Hiberboot/Suspensao/ASPM)..." -ForegroundColor Yellow
 try {
     powercfg /hibernate off
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
-    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA OK] Fast Startup e Hibernacao garantidos em 0 (Desativado)."
-    Write-Host "      -> Fast Startup e Hibernacao garantidos em 0 (Desativados)." -ForegroundColor Green
+    powercfg /change standby-timeout-ac 0
+    powercfg /change standby-timeout-dc 0
+    powercfg /setacvalueindex SCHEME_CURRENT 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0
+    powercfg /setactive SCHEME_CURRENT
+    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA OK] Fast Startup, Hibernacao, Suspensao e ASPM garantidos em 0 (Desativados)."
+    Write-Host "      -> Fast Startup, Hibernacao, Suspensao e ASPM garantidos em 0 (Desativados)." -ForegroundColor Green
 } catch {
-    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA] Requer admin para alterar Hiberboot."
+    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA] Requer admin para alterar configuracoes de energia."
 }
 
 # 5. GARANTIR BLOQUEIO DO SERVICO CONFLITANTE GAMEINPUT

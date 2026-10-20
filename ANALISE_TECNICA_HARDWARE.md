@@ -11,7 +11,8 @@
 * **Gabinete:** Metalfish T60 (SFF / Mini-ITX compacto com circulação restrita de ar).
 * **Fonte:** Metalfish 600W (Linha +12V: 50A) — Potência suficiente para a combinação Ryzen 5600 + RX 7600.
 * **Placa-Mãe:** JGINYUE B550I-GAMING (Chipset AMD B550, Socket AM4, PCIe 4.0).
-  * **BIOS Atual:** American Megatrends v5.17 | ID: `JA500SCA` | Data: 12/06/2026 | AGESA: `ComboAM4v2PI 1.2.0.F`.
+  * **BIOS Atualizada com Sucesso:** American Megatrends v5.17 | Versão: `JA500SAM (GEN3)` | Data de Liberação: `08/05/2026` | AGESA: `ComboAM4v2PI 1.2.0.F`.
+  * **Backup de Fábrica:** Imagem física completa de 16 MB extraída do chip (`BACKUP_ORIGINAL_JA500SCA.rom`) preservada com segurança.
 * **Processador:** AMD Ryzen 5 5600 (6 Cores / 12 Threads, TDP 65W, Zen 3 Vermeer).
   * Sem vídeo integrado (sem iGPU) — Toda imagem depende 100% da placa dedicada.
 * **Placa de Vídeo:** AMD Radeon RX 7600 8GB (Navi 33, 8GB GDDR6 Samsung, Barramento 128-bit, PCIe 4.0 x8 nativo).
@@ -35,10 +36,18 @@ Ao inspecionar diretamente as propriedades de hardware do barramento PCIe no Win
 4. **Resultado:** A placa de vídeo **não consegue inicializar o sinal de vídeo e o monitor fica 100% preto** (sem nem exibir a logo da BIOS).
 5. **Solução Definitiva:** Como a BIOS `JA500SCA` não possui a opção manual de travar em Gen3, a fabricante JGINYUE disponibiliza a versão oficial de BIOS **`(GEN3)`** travada nativamente em PCIe 3.0 para usuários de gabinetes ITX com riser.
 
-### Causa 2: Inicialização Rápida (Fast Startup / Hiberboot) do Windows
-* O Fast Startup do Windows salva um estado híbrido da memória e do subsistema PCIe no desligamento.
-* Ao religar o PC, a GPU tentava acordar rápido demais pelo riser, travando o sinal de vídeo.
-* **Solução:** Desativação permanente e prioritária da Inicialização Rápida e da Hibernação (`powercfg /hibernate off` e `HiberbootEnabled = 0`).
+### Causa 2: Inicialização Rápida (Fast Startup) e Suspensão Automática (Sleep / ASPM)
+* **Suspensão e ASPM:** Quando o Windows fica ocioso por 15 minutos e entra em suspensão (S3) ou reduz a energia do link PCIe (ASPM L1), a tentativa de acordar o barramento em Gen4 através do cabo Riser Gen3 falha (`LiveKernelEvent 1b0` / Watchdog de vídeo), travando a máquina com tela preta.
+* **Fast Startup:** O desligamento híbrido salva o estado instável do PCIe, causando telas pretas no próximo boot a frio.
+* **Solução Conjunta:** Desativação permanente e prioritária da Inicialização Rápida, Hibernação, Suspensão Automática e economia de energia PCIe:
+  ```cmd
+  powercfg /hibernate off
+  reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f
+  powercfg /change standby-timeout-ac 0
+  powercfg /change standby-timeout-dc 0
+  powercfg /setacvalueindex SCHEME_CURRENT 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0
+  powercfg /setactive SCHEME_CURRENT
+  ```
 
 ### Causa 3: Módulo Wi-Fi Interno M.2
 * O módulo Wi-Fi interno causava conflitos no barramento PCIe da placa-mãe.
@@ -96,3 +105,18 @@ Perfil 100% testado, estável e livre de artefatos visuais:
 * **Temperatura:** `41 °C`
 * **Erros de Leitura / Setores Defeituosos:** `0 erros` nos logs do sistema
 * **Comando TRIM:** `Ativo (DisableDeleteNotify = 0)`
+
+---
+
+## 7. Procedimento Obrigatório Pós-Atualização de BIOS (JA500SAM GEN3)
+
+Toda vez que a BIOS for regravada ou o CMOS for resetado, o seguinte procedimento deve ser seguido:
+
+1. Ao ligar/reiniciar o computador, pressione repetidamente a tecla **`DEL`** para entrar na BIOS.
+2. Pressione **`F9`** (*Load Optimized Defaults*) e confirme com **Enter** (carrega os parâmetros nativos da versão GEN3).
+3. Navegue até o menu **`Advanced`** > **`PCI Subsystem Settings`**:
+   * **`Above 4G Decoding`**: mudar para **`Enabled`**
+   * **`Re-Size BAR Support`**: mudar para **`Auto`** ou **`Enabled`** *(ativa o AMD Smart Access Memory de 8GB)*
+4. Verifique se o menu disponibiliza a seleção de velocidade PCIe (*Link Speed*) e force em **`Gen3`**.
+5. Pressione **`F10`** e confirme com **Enter** para salvar e reiniciar.
+

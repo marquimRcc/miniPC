@@ -15,39 +15,50 @@ Repositório dedicado à suíte de scripts, diagnósticos e parametrizações de
 | **Gabinete** | Metalfish T60 (Mini-ITX / SFF) | Cabo extensor (Riser) PCIe 3.0; volume interno reduzido. |
 | **Processador** | AMD Ryzen 5 5600 (6 Cores / 12 Threads) | Em stock atinge 88W e 1.35V+, aquecendo rapidamente sem fluxo direto de ar. |
 | **Placa de Vídeo** | AMD Radeon RX 7600 8GB | Arquitetura RDNA 3 com consumo de 165W-185W; gera calor concentrado no chassis. |
-| **Placa-Mãe** | JGINYUE B550i-GAMING (Mini-ITX) | Formato compacto com dissipação reduzida de VRM; BIOS JA500SCA. |
+| **Placa-Mãe** | JGINYUE B550i-GAMING (Mini-ITX) | Formato compacto; BIOS atualizada para **`JA500SAM (GEN3)`** (AGESA 1.2.0.F). |
 | **Armazenamento**| SSD XrayDisk 1TB SATA | 100% Saudável (41°C, TRIM ativo, zero setores defeituosos). |
 | **Memória** | 16 GB DDR4 Corsair (DDR4-3200) | Operando em Single Channel a 2133 MHz (estabilidade de boot). |
 | **Monitor** | 1920x1080 @ 60 Hz | Taxa máxima de exibição de 60 FPS (quadros acima geram puro calor inútil). |
 
 ---
 
-## 🔥 2. PRIORIDADE Nº 1 ABSOLUTA PÓS-FORMATAÇÃO: DESATIVAR HIBERNAÇÃO
+## 🔥 2. PRIORIDADE Nº 1 ABSOLUTA PÓS-FORMATAÇÃO: ANTI-TELA PRETA NO RISER
 
 > [!CRITICAL]
-> **ESTE É O PRIMEIRO COMANDO OBRIGATÓRIO A SER EXECUTADO ASSIM QUE O WINDOWS FOR INSTALADO:**
+> **ESTES SÃO OS PRIMEIROS COMANDOS OBRIGATÓRIOS A SEREM EXECUTADOS ASSIM QUE O WINDOWS FOR INSTALADO:**
 
 ```cmd
+:: 1. Desativa Hibernacao e Inicializacao Rapida (Fast Startup)
 powercfg /hibernate off
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f
+
+:: 2. Desativa Suspensao Automatica (evita travamento ao tentar acordar GPU no Riser)
+powercfg /change standby-timeout-ac 0
+powercfg /change standby-timeout-dc 0
+
+:: 3. Desativa Economia de Energia do Barramento PCIe (ASPM)
+powercfg /setacvalueindex SCHEME_CURRENT 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0
+powercfg /setactive SCHEME_CURRENT
 ```
 
-### Por que esse comando é prioritário?
-1. O cabo riser do Metalfish T60 é **PCIe 3.0**, enquanto a placa-mãe e a RX 7600 são **PCIe 4.0**.
-2. A Inicialização Rápida (*Fast Startup*) do Windows tenta acordar o subsistema PCIe de um estado de suspensão híbrida, causando falha de comunicação (*link training timeout*) no riser.
-3. Isso causa a temida **TELA PRETA NO BOOT (o PC liga, as ventoinhas giram, mas não dá vídeo nem mostra o logo da BIOS)**.
-4. Desativando a hibernação e o Fast Startup, o Windows é forçado a realizar um **boot UEFI 100% limpo todas as vezes**, eliminando essa falha.
+### Por que esses comandos são prioritários?
+1. O cabo extensor (Riser) do Metalfish T60 é **PCIe 3.0**, enquanto a placa-mãe e a RX 7600 suportam **PCIe 4.0**.
+2. A Inicialização Rápida (*Fast Startup*) e a Suspensão Automática (*Sleep/Standby S3*) tentam reestabelecer o link PCIe a frio, causando falha de comunicação (*link training timeout / LiveKernelEvent 1b0*) no riser.
+3. Isso causa a temida **TELA PRETA (o PC liga, as ventoinhas giram, mas não dá vídeo nem mostra o logo da BIOS, ou congela ao acordar)**.
+4. Desativando a hibernação, a suspensão e o ASPM, o Windows é forçado a realizar um **boot UEFI 100% limpo e estável todas as vezes**, eliminando essa falha.
 
 ---
 
-## ❄️ 3. Ajustes de BIOS Recomendados (JGINYUE B550i-GAMING)
+## ❄️ 3. Ajustes de BIOS Recomendados (JGINYUE B550i-GAMING GEN3)
 
 1. Ligue o PC e pressione `DEL` repetidamente para acessar o menu da BIOS.
-2. **PCI Subsystem Settings:**
+2. **Pressione `F9`** (*Load Optimized Defaults*) e tecle `Enter` para carregar as definições de fábrica da BIOS GEN3.
+3. **PCI Subsystem Settings (Aba Advanced):**
    * **Above 4G Decoding:** `Enabled`
-   * **Re-Size BAR Support:** `Enabled` *(Ativa o AMD Smart Access Memory)*
+   * **Re-Size BAR Support:** `Enabled` *(Ativa o AMD Smart Access Memory de 8GB)*
    * **CSM Support:** `Disabled` *(Garante boot puro UEFI)*
-3. **Curva de Ventoinha da CPU (Hardware Monitor na BIOS):**
+4. **Velocidade PCIe:** Se houver a opção de velocidade do slot PCIe, travar em **`Gen3`**.
+5. **Curva de Ventoinha da CPU (Hardware Monitor na BIOS):**
    * `35°C` -> PWM **`150`** (~60%)
    * `45°C` -> PWM **`190`** (~75%)
    * `55°C` -> PWM **`230`** (~90%)
