@@ -107,9 +107,9 @@ Caso prefira ajustar manualmente, abra o **AMD Software** -> Aba **Desempenho** 
 
 ## 🛠️ 5. Estrutura dos Scripts Disponíveis
 
-### 1. `Otimizar_Pos_Formatacao.bat` / `.ps1`
-Executado após instalar ou formatar o Windows (já possui auto-elevação para Administrador). Aplica automaticamente:
-* **[Etapa 1] Desativação Prioritária de Hibernação e Fast Startup** (`powercfg /hibernate off` e `HiberbootEnabled = 0`).
+### 1. `1_CLIQUE_AQUI_POS_FORMATACAO.bat` (ou `Otimizar_Pos_Formatacao.bat`)
+Executado após instalar ou formatar o Windows (possui auto-elevação para Administrador). Aplica automaticamente com 1 clique:
+* **[Etapa 1] Desativação Prioritária de Hibernação, Fast Startup e Suspensão Automática** (`powercfg /hibernate off`, `HiberbootEnabled = 0`, `standby-timeout = 0` e `ASPM = 0`).
 * **[Etapa 2] Trava Térmica da CPU em 3.5 GHz:** Desativa o boost agressivo, fixa o estado máximo em 99% e mínimo em 5% (tensão cai para ~0.93V e consumo para 1.5W em repouso).
 * **[Etapa 3] Ativação do Modo de Jogo e Desativação do GameDVR:** Reduz latência e elimina uso do encoder da placa de vídeo em segundo plano.
 * **[Etapa 4] Limpeza e Otimização:** Desativação de widgets, telemetria pesada e limpeza de cache de shaders/DNS.
