@@ -5,17 +5,16 @@
     Foco: Menor temperatura possivel, eliminacao de tela preta no boot e estabilidade maxima.
 #>
 
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Clear-Host
 
 Write-Host "==========================================================================" -ForegroundColor Cyan
-Write-Host "    OTIMIZACAO SFF MESTRE — BAIXA TEMPERATURA & ESTABILIDADE              " -ForegroundColor Cyan
+Write-Host "    OTIMIZACAO SFF MESTRE - BAIXA TEMPERATURA E ESTABILIDADE              " -ForegroundColor Cyan
 Write-Host "    Metalfish T60 | Ryzen 5 5600 | RX 7600 | JGINYUE B550i                " -ForegroundColor Cyan
 Write-Host "==========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. PRIORIDADE ZERO ABSOLUTA: DESATIVACAO DE HIBERNACAO, FAST STARTUP E SUSPENSAO AUTOMATICA
-Write-Host "[1/8] PRIORIDADE 1: Desativando Hibernacao, Fast Startup e Suspensao (Prevencao Tela Preta)..." -ForegroundColor Yellow
+Write-Host "[1/8] PRIORIDADE 1: Desativando Hibernacao, Fast Startup e Suspensao..." -ForegroundColor Yellow
 try {
     # 1.1 Desativa hibernacao no subsistema de energia
     powercfg /hibernate off
@@ -51,14 +50,14 @@ powercfg /setdcvalueindex $balancedGuid SUB_PROCESSOR PROCTHROTTLEMAX 99
 powercfg /setacvalueindex $balancedGuid SUB_PROCESSOR 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
 powercfg /setdcvalueindex $balancedGuid SUB_PROCESSOR 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
 
-# Gerenciamento de energia do link PCIe (ASPM Desligado — previne Watchdog LiveKernelEvent 1b0 no Riser)
+# Gerenciamento de energia do link PCIe (ASPM Desligado - previne Watchdog LiveKernelEvent 1b0 no Riser)
 powercfg /setacvalueindex $balancedGuid SUB_PCIEXPRESS ee12f906-d277-404b-b6da-e5fa1a576df5 0
 powercfg /setdcvalueindex $balancedGuid SUB_PCIEXPRESS ee12f906-d277-404b-b6da-e5fa1a576df5 0
 
 powercfg /setactive $balancedGuid
 Write-Host "      [OK] Processador travado em 3.5 GHz (~0.93V) com reducao termica imediata." -ForegroundColor Green
 
-# 3. OTIMIZACAO PARA JOGOS (MODO DE JOGO & GAMEDVR)
+# 3. OTIMIZACAO PARA JOGOS (MODO DE JOGO E GAMEDVR)
 Write-Host "[3/8] Otimizando Windows para Jogos (Latencia e GPU)..." -ForegroundColor Yellow
 if (!(Test-Path "HKCU:\Software\Microsoft\GameBar")) { New-Item -Path "HKCU:\Software\Microsoft\GameBar" -Force | Out-Null }
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\GameBar" -Name "AutoGameModeEnabled" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
