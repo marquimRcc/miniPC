@@ -115,5 +115,13 @@ Executado após instalar ou formatar o Windows (possui auto-elevação para Admi
 * **[Etapa 4] Limpeza e Otimização:** Desativação de widgets, telemetria pesada e limpeza de cache de shaders/DNS.
 * **[Etapa 5] Comando TRIM no SSD SATA.**
 
-### 2. `Verificar_Reparar_Inicializacao.bat` / `.ps1`
+### 2. `Instalar_Programas_Automatico.bat` / `.ps1`
+Instalador automático e 100% silencioso para pós-formatação. Instala todos os softwares essenciais via Winget com barra de progresso visual:
+* **Navegadores & IA:** Brave Browser, ChatGPT Desktop, Telegram Desktop.
+* **Jogos:** Steam, Minecraft Launcher.
+* **Mídia:** VLC Media Player.
+* **Desenvolvimento:** Git para Windows, Python 3.11, Notepad++, 7-Zip, Windows Terminal, Google Antigravity.
+* *Recurso inteligente:* Verifica se o aplicativo já existe antes de baixar, pulando itens já presentes e exibindo resumo final.
+
+### 3. `Verificar_Reparar_Inicializacao.bat` / `.ps1`
 Executa uma bateria de testes diagnósticos no sistema verificando integridade do volume C: (SpotFix), status da RX 7600, garantia de Fast Startup em 0 e logs de encerramento inesperado.
