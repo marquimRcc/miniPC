@@ -4,7 +4,7 @@
 #>
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-Clear-Host
+if (-not $env:MINIPC_CHAIN) { Clear-Host }
 
 Write-Host "==========================================================================" -ForegroundColor Cyan
 Write-Host "     PAINEL DE VALIDACAO DAS OTIMIZACOES SFF (BAIXA TEMPERATURA)          " -ForegroundColor Cyan
@@ -52,7 +52,7 @@ if (!$gameInputRedist -or $gameInputRedist.Status -eq "Stopped" -or $gameInputRe
     Write-Host "  [ERRO] Conflito Microsoft GameInput: SERVICO REDUNDANTE AINDA ATIVO" -ForegroundColor Red
 }
 
-# 5. Validar Inicializacao Rapida (Fast Startup / Hiberboot)
+# 5. Validar Inicializacao Rapida (Fast Startup / Hiberboot) e Hibernacao
 $hiber = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -ErrorAction SilentlyContinue).HiberbootEnabled
 if ($hiber -eq 0) {
     Write-Host "  [OK] Inicializacao Rapida (Fast Startup): DESATIVADA (Sem congelamentos de boot)" -ForegroundColor Green
@@ -60,15 +60,33 @@ if ($hiber -eq 0) {
     Write-Host "  [ALERTA] Inicializacao Rapida: ATIVA ($hiber)" -ForegroundColor Yellow
 }
 
-# 6. Validar Widgets da Barra de Tarefas
+$hibEnabled = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Power" -Name "HibernateEnabled" -ErrorAction SilentlyContinue).HibernateEnabled
+if ($hibEnabled -eq 0) {
+    Write-Host "  [OK] Hibernacao do Windows: DESATIVADA" -ForegroundColor Green
+} else {
+    Write-Host "  [ALERTA] Hibernacao do Windows: ATIVA (Execute EXECUTAR_TUDO.bat como Administrador)" -ForegroundColor Yellow
+}
+
+# 6. Validar Link PCIe da GPU (Riser Gen3)
+if ($gpu) {
+    $linkSpeed = (Get-PnpDeviceProperty -InstanceId $gpu.InstanceId -KeyName "DEVPKEY_PciDevice_CurrentLinkSpeed" -ErrorAction SilentlyContinue).Data
+    if ($linkSpeed -eq 3) {
+        Write-Host "  [OK] Barramento PCIe da GPU: Gen3 (Ideal para o cabo Riser)" -ForegroundColor Green
+    } elseif ($linkSpeed) {
+        Write-Host "  [ALERTA] Barramento PCIe da GPU em Gen$linkSpeed (Verifique na BIOS: Advanced > PCI Subsystem > Gen3)" -ForegroundColor Yellow
+    }
+}
+
+# 7. Validar Widgets da Barra de Tarefas
 $widgets = (Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -ErrorAction SilentlyContinue).TaskbarDa
-if ($widgets -eq 0) {
-    Write-Host "  [OK] Widgets da Barra de Tarefas: DESATIVADOS (Economia de 400MB de RAM)" -ForegroundColor Green
+$widgetsPolicy = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Dsh" -Name "AllowNewsAndInterests" -ErrorAction SilentlyContinue).AllowNewsAndInterests
+if ($widgets -eq 0 -or $widgetsPolicy -eq 0) {
+    Write-Host "  [OK] Widgets da Barra de Tarefas: DESATIVADOS (Economia de RAM)" -ForegroundColor Green
 } else {
     Write-Host "  [INFO] Widgets da Barra de Tarefas: ATIVOS" -ForegroundColor Gray
 }
 
-# 7. Memoria RAM e Armazenamento
+# 8. Memoria RAM e Armazenamento
 $os = Get-CimInstance Win32_OperatingSystem
 $freeRamGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
 $totalRamGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)

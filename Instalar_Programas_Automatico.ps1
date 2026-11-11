@@ -5,12 +5,16 @@
 #>
 
 [Console]::OutputEncoding = [System.Text.Encoding]::ASCII
-Clear-Host
+if (-not $env:MINIPC_CHAIN) { Clear-Host }
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 Write-Host "==========================================================================" -ForegroundColor Cyan
 Write-Host "    INSTALADOR AUTOMATICO DE PROGRAMAS & DRIVERS AMD                      " -ForegroundColor Cyan
 Write-Host "    miniPC Metalfish T60 | Windows 11                                     " -ForegroundColor Cyan
 Write-Host "==========================================================================" -ForegroundColor Cyan
+if (-not $isAdmin) {
+    Write-Host "[AVISO] Executando sem Administrador; instaladores de sistema podem falhar." -ForegroundColor Yellow
+}
 Write-Host ""
 
 # Verificar se o Winget esta disponivel
@@ -77,9 +81,14 @@ foreach ($app in $apps) {
     Write-Host "[$contador/$total] $barraProgresso $pct% | Categoria: $($app.Categoria)" -ForegroundColor DarkCyan
     Write-Host "Programa: $($app.Nome) (ID: $($app.Id))" -ForegroundColor White
 
-    # Checagem previa: Verificar se o programa ja esta instalado
-    $checkList = winget list --id $app.Id --exact 2>&1
-    $isInstalled = ($LASTEXITCODE -eq 0 -and ($checkList -match [regex]::Escape($app.Id)))
+    # Checagem previa: Verificar se o programa ja esta instalado (compat. com pacotes normais e portateis)
+    $checkList = winget list --id $app.Id --exact --accept-source-agreements 2>&1
+    $idPattern = "(?<!\S)$([regex]::Escape($app.Id))(?!\S)"
+    $isInstalled = ($LASTEXITCODE -eq 0 -and ($checkList -match $idPattern))
+    if (-not $isInstalled) {
+        $checkFallback = winget list $app.Id --accept-source-agreements 2>&1
+        $isInstalled = ($LASTEXITCODE -eq 0 -and ($checkFallback -match $idPattern))
+    }
 
     if ($isInstalled) {
         Write-Host "  -> [JA INSTALADO] O aplicativo ja esta presente no sistema. Pulando..." -ForegroundColor Yellow
@@ -140,8 +149,13 @@ if (Test-ProgramInstalled "AMD Software") {
         $proc = Start-Process -FilePath $adrenalinDest -ArgumentList "-INSTALL" -PassThru -Wait
         
         Remove-Item $adrenalinDest -Force -ErrorAction SilentlyContinue
-        Write-Host "  -> [SUCESSO] AMD Software: Adrenalin instalado com sucesso!" -ForegroundColor Green
-        $instalados++
+        if ($proc.ExitCode -in @(0, 3010) -or (Test-ProgramInstalled "AMD Software")) {
+            Write-Host "  -> [SUCESSO] AMD Software: Adrenalin instalado com sucesso! (Codigo: $($proc.ExitCode))" -ForegroundColor Green
+            $instalados++
+        } else {
+            Write-Host "  -> [AVISO] Instalador AMD Adrenalin retornou codigo $($proc.ExitCode)." -ForegroundColor Red
+            $falhas++
+        }
     } catch {
         Write-Host "  -> [AVISO] Falha ao baixar/instalar AMD Software automaticamente: $_" -ForegroundColor Red
         $falhas++
@@ -178,11 +192,16 @@ if (Test-ProgramInstalled "AMD Ryzen Master") {
         $wc.DownloadFile($rmUrl, $rmDest)
 
         Write-Host "  -> [INSTALANDO] Executando instalacao do AMD Ryzen Master..." -ForegroundColor Cyan
-        $proc = Start-Process -FilePath $rmDest -ArgumentList "-INSTALL" -PassThru -Wait
+        $proc = Start-Process -FilePath $rmDest -ArgumentList '/s /v"/qn /norestart"' -PassThru -Wait
         
         Remove-Item $rmDest -Force -ErrorAction SilentlyContinue
-        Write-Host "  -> [SUCESSO] AMD Ryzen Master instalado com sucesso!" -ForegroundColor Green
-        $instalados++
+        if ($proc.ExitCode -in @(0, 3010) -or (Test-ProgramInstalled "AMD Ryzen Master")) {
+            Write-Host "  -> [SUCESSO] AMD Ryzen Master instalado com sucesso! (Codigo: $($proc.ExitCode))" -ForegroundColor Green
+            $instalados++
+        } else {
+            Write-Host "  -> [AVISO] Instalador AMD Ryzen Master retornou codigo $($proc.ExitCode)." -ForegroundColor Red
+            $falhas++
+        }
     } catch {
         Write-Host "  -> [AVISO] Falha ao baixar/instalar AMD Ryzen Master automaticamente: $_" -ForegroundColor Red
         $falhas++

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     FRENTE 2: Diagnostico e Auto-Reparo na Inicializacao do Windows
     Executa a cada boot para verificar se houve falha no desligamento/boot anterior e corrige automaticamente.
@@ -85,16 +85,24 @@ try {
 # 4. GARANTIR FAST STARTUP, HIBERNACAO E SUSPENSAO DESATIVADAS (ANTI-TELA PRETA NO RISER)
 Write-Host "[4/5] Garantindo prevencao contra travamentos de boot e sono (Hiberboot/Suspensao/ASPM)..." -ForegroundColor Yellow
 try {
-    powercfg /hibernate off
-    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+    $hibOk = $true
+    powercfg /hibernate off 2>$null
+    if ($LASTEXITCODE -ne 0) { $hibOk = $false }
+    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord -ErrorAction Stop
     powercfg /change standby-timeout-ac 0
     powercfg /change standby-timeout-dc 0
     powercfg /setacvalueindex SCHEME_CURRENT 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0
     powercfg /setactive SCHEME_CURRENT
-    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA OK] Fast Startup, Hibernacao, Suspensao e ASPM garantidos em 0 (Desativados)."
-    Write-Host "      -> Fast Startup, Hibernacao, Suspensao e ASPM garantidos em 0 (Desativados)." -ForegroundColor Green
+    if ($hibOk) {
+        Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA OK] Fast Startup, Hibernacao, Suspensao e ASPM garantidos em 0 (Desativados)."
+        Write-Host "      -> Fast Startup, Hibernacao, Suspensao e ASPM garantidos em 0 (Desativados)." -ForegroundColor Green
+    } else {
+        Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA PARCIAL] Suspensao e ASPM em 0; powercfg /hibernate off exigiu Admin."
+        Write-Host "      -> Suspensao/ASPM em 0; Hibernacao exigiu Administrador." -ForegroundColor Yellow
+    }
 } catch {
-    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA] Requer admin para alterar configuracoes de energia."
+    Add-Content -Path $logFile -Value "[$dataHora] [ENERGIA] Requer admin para alterar HKLM/configuracoes de energia."
+    Write-Host "      -> Requer Administrador para alterar HKLM/energia." -ForegroundColor Yellow
 }
 
 # 5. GARANTIR BLOQUEIO DO SERVICO CONFLITANTE GAMEINPUT

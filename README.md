@@ -8,6 +8,18 @@ Repositório dedicado à suíte de scripts, diagnósticos e parametrizações de
 
 ---
 
+## ⚡ 0. Início Rápido Pós-Formatação (1 Comando / 1 UAC)
+
+Logo após instalar o Windows, abra o **Terminal (Admin)** (`Win + X` → *Terminal (Administrador)*) e cole **apenas esta linha** para baixar o repositório e executar todas as etapas em sequência automática com **1 único UAC**:
+
+```powershell
+$d="$env:USERPROFILE\miniPC"; irm "https://github.com/marquimRcc/miniPC/archive/refs/heads/main.zip" -OutFile "$env:TEMP\m.zip"; Expand-Archive "$env:TEMP\m.zip" "$env:TEMP\m" -Force; New-Item -ItemType Directory -Force $d | Out-Null; Copy-Item "$env:TEMP\m\miniPC-main\*" $d -Recurse -Force; Remove-Item "$env:TEMP\m.zip","$env:TEMP\m" -Recurse -Force; & "$d\EXECUTAR_TUDO.bat"
+```
+
+Se a pasta `miniPC` já estiver no computador, basta dar duplo clique em **`EXECUTAR_TUDO.bat`** (que executa otimizações, instalador de programas/drivers AMD, auto-reparo, validação e diagnóstico de vídeo em sequência, salvando tudo em `Logs\Setup_Completo.log`).
+
+---
+
 ## 🖥️ 1. Perfil do Hardware (Metalfish T60)
 
 | Componente | Modelo / Especificação | Desafio Térmico em Gabinete Compacto (SFF) |
@@ -120,6 +132,14 @@ Caso prefira ajustar manualmente, abra o **AMD Software** -> Aba **Desempenho** 
 ---
 
 ## 🛠️ 5. Estrutura dos Scripts Disponíveis
+
+### 0. `EXECUTAR_TUDO.bat` *(Orquestrador Único Recomendado)*
+Ponto de entrada único pós-formatação com auto-elevação (1 UAC no início). Executa em sequência automática, sem pausas intermediárias, registrando tudo em `Logs\Setup_Completo.log`:
+1. `Otimizar_Pos_Formatacao.ps1`
+2. `Instalar_Programas_Automatico.ps1`
+3. `Verificar_Reparar_Inicializacao.ps1`
+4. `Validar_Otimizacoes_SFF.ps1`
+5. `Diagnostico_Video.ps1`
 
 ### 1. `1_CLIQUE_AQUI_POS_FORMATACAO.bat` (ou `Otimizar_Pos_Formatacao.bat`)
 Executado após instalar ou formatar o Windows (possui auto-elevação para Administrador). Aplica automaticamente com 1 clique:
