@@ -130,7 +130,10 @@ Executado após instalar ou formatar o Windows (possui auto-elevação para Admi
 * **[Etapa 5] Comando TRIM no SSD SATA.**
 
 ### 2. `Instalar_Programas_Automatico.bat` / `.ps1`
-Instalador automático e 100% silencioso para pós-formatação. Instala todos os softwares essenciais via Winget com barra de progresso visual:
+Instalador automático e 100% silencioso para pós-formatação. Instala todos os softwares essenciais via Winget e baixa/instala automaticamente os drivers e utilitários oficiais da AMD:
+* **Drivers & Utilitários AMD (Automático):** 
+  * **AMD Software: Adrenalin Edition** (Driver de vídeo oficial da RX 7600)
+  * **AMD Ryzen Master** (Gerenciador oficial para Eco Mode / Curve Optimizer da CPU)
 * **Navegadores & IA:** Brave Browser, Mozilla Firefox, ChatGPT Desktop, Telegram Desktop.
 * **Jogos:** Steam, Ubisoft Connect, Minecraft Launcher.
 * **Mídia & Downloads:** VLC Media Player, Stremio, qBittorrent.
