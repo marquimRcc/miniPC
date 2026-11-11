@@ -25,11 +25,15 @@ if (-not $wingetCheck) {
 # Lista estruturada dos programas essenciais do usuario
 $apps = @(
     [PSCustomObject]@{ Categoria = "Navegador"; Nome = "Brave Browser"; Id = "Brave.Brave" },
+    [PSCustomObject]@{ Categoria = "Navegador"; Nome = "Mozilla Firefox"; Id = "Mozilla.Firefox" },
     [PSCustomObject]@{ Categoria = "Comunicacao"; Nome = "Telegram Desktop"; Id = "Telegram.TelegramDesktop" },
     [PSCustomObject]@{ Categoria = "Inteligencia Artificial"; Nome = "ChatGPT Desktop"; Id = "OpenAI.ChatGPT" },
     [PSCustomObject]@{ Categoria = "Jogos"; Nome = "Steam"; Id = "Valve.Steam" },
+    [PSCustomObject]@{ Categoria = "Jogos"; Nome = "Ubisoft Connect"; Id = "Ubisoft.Connect" },
     [PSCustomObject]@{ Categoria = "Jogos"; Nome = "Minecraft Launcher"; Id = "Mojang.MinecraftLauncher" },
     [PSCustomObject]@{ Categoria = "Multimidia"; Nome = "VLC Media Player"; Id = "VideoLAN.VLC" },
+    [PSCustomObject]@{ Categoria = "Multimidia"; Nome = "Stremio"; Id = "Stremio.Stremio" },
+    [PSCustomObject]@{ Categoria = "Downloads"; Nome = "qBittorrent"; Id = "qBittorrent.qBittorrent" },
     [PSCustomObject]@{ Categoria = "Desenvolvimento"; Nome = "Git para Windows"; Id = "Git.Git" },
     [PSCustomObject]@{ Categoria = "Desenvolvimento"; Nome = "Python 3.11"; Id = "Python.Python.3.11" },
     [PSCustomObject]@{ Categoria = "Editores"; Nome = "Notepad++"; Id = "Notepad++.Notepad++" },
