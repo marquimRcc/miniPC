@@ -49,6 +49,20 @@ powercfg /setactive SCHEME_CURRENT
 
 ---
 
+## ⚡ 2.1. Instalação dos Drivers Oficiais AMD (Pós-Formatação)
+
+Como os utilitários da AMD contêm pacotes pesados de kernel e interface gráfica de calibração, siga esta ordem logo após rodar o script mestre:
+
+1. **AMD Software: Adrenalin Edition (Driver da RX 7600):**  
+   * Baixe pelo [Site Oficial AMD Drivers](https://www.amd.com/pt/support/download/drivers.html) ou use o instalador salvo no pendrive.
+   * Selecione a opção **Instalação Completa (Full Install)** para ter acesso à aba de Ajuste/Tuning.
+   * Em seguida, **importe o perfil `Curva_Fria_RX7600.xml`** (instruções na Seção 4).
+2. **AMD Ryzen Master (Controle Térmico da CPU):**  
+   * Baixe pelo [Site Oficial do Ryzen Master](https://www.amd.com/pt/products/software/ryzen-master.html).
+   * Ative o **Eco Mode** (45W PPT) ou configure o *Curve Optimizer* em All Cores Negative -25 para derrubar a temperatura da CPU.
+
+---
+
 ## ❄️ 3. Ajustes de BIOS Recomendados (JGINYUE B550i-GAMING GEN3)
 
 1. Ligue o PC e pressione `DEL` repetidamente para acessar o menu da BIOS.
