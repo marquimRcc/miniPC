@@ -157,7 +157,7 @@ Instalador automático e 100% silencioso para pós-formatação. Instala todos o
 * **Navegadores & IA:** Brave Browser, Mozilla Firefox, ChatGPT Desktop, Telegram Desktop.
 * **Jogos:** Steam, Ubisoft Connect, Minecraft Launcher.
 * **Mídia & Downloads:** VLC Media Player, Stremio, qBittorrent.
-* **Desenvolvimento:** Git para Windows, Python 3.11, Notepad++, 7-Zip, Windows Terminal, Google Antigravity.
+* **Produtividade & Dev:** ONLYOFFICE Desktop Editors, Notepad++, Git para Windows, Python 3.11, 7-Zip, Windows Terminal, Google Antigravity.
 * *Recurso inteligente:* Verifica se o aplicativo já existe antes de baixar, pulando itens já presentes e exibindo resumo final.
 
 ### 3. `Verificar_Reparar_Inicializacao.bat` / `.ps1`

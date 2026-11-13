@@ -51,13 +51,14 @@ $apps = @(
     [PSCustomObject]@{ Categoria = "Downloads"; Nome = "qBittorrent"; Id = "qBittorrent.qBittorrent" },
     [PSCustomObject]@{ Categoria = "Desenvolvimento"; Nome = "Git para Windows"; Id = "Git.Git" },
     [PSCustomObject]@{ Categoria = "Desenvolvimento"; Nome = "Python 3.11"; Id = "Python.Python.3.11" },
+    [PSCustomObject]@{ Categoria = "Produtividade"; Nome = "ONLYOFFICE Desktop Editors"; Id = "ONLYOFFICE.DesktopEditors" },
     [PSCustomObject]@{ Categoria = "Editores"; Nome = "Notepad++"; Id = "Notepad++.Notepad++" },
     [PSCustomObject]@{ Categoria = "Utilitarios"; Nome = "7-Zip"; Id = "7zip.7zip" },
     [PSCustomObject]@{ Categoria = "Terminal"; Nome = "Windows Terminal"; Id = "Microsoft.WindowsTerminal" },
     [PSCustomObject]@{ Categoria = "IA / Dev"; Nome = "Google Antigravity"; Id = "Google.Antigravity" }
 )
 
-# 16 programas Winget + 2 utilitarios oficiais AMD
+# 17 programas Winget + 2 utilitarios oficiais AMD
 $total = $apps.Count + 2
 $instalados = 0
 $jaExistentes = 0
