@@ -61,19 +61,27 @@ try {
     Add-Content -Path $logFile -Value "[$dataHora] [GPU] Erro ao verificar GPU: $_"
 }
 
-# 3. VERIFICAR SE O ULTIMO DESLIGAMENTO FOI INESPERADO (ID 41 / 6008)
-Write-Host "[3/5] Verificando se o ultimo encerramento foi forçado/repentino..." -ForegroundColor Yellow
+# 3. VERIFICAR SE O ULTIMO DESLIGAMENTO FOI INESPERADO OU BSOD (ID 41 / 6008 / 1001)
+Write-Host "[3/6] Verificando se o ultimo encerramento foi forçado/repentino ou BSOD..." -ForegroundColor Yellow
 try {
     $lastBoot = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime
-    $uncleanEvent = Get-WinEvent -FilterHashtable @{LogName='System'; Id=41,6008; StartTime=$lastBoot.AddMinutes(-5)} -MaxEvents 1 -ErrorAction SilentlyContinue
+    $werEvent = Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Microsoft-Windows-WER-SystemErrorReporting'; Id=1001; StartTime=$lastBoot.AddMinutes(-10)} -MaxEvents 1 -ErrorAction SilentlyContinue
+    if ($werEvent) {
+        $bcText = ($werEvent.Properties[0].Value -split "\(")[0].Trim()
+        $msgBsod = "[$dataHora] [ALERTA BSOD] O sistema reiniciou apos Tela Azul ($bcText). Minidump gerado."
+        Add-Content -Path $logFile -Value $msgBsod
+        Write-Host $msgBsod -ForegroundColor Red
+    }
+
+    $uncleanEvent = Get-WinEvent -FilterHashtable @{LogName='System'; Id=41,6008; StartTime=$lastBoot.AddMinutes(-10)} -MaxEvents 1 -ErrorAction SilentlyContinue
     if ($uncleanEvent) {
-        $msg = "[$dataHora] [AVISO BOOT] O computador foi reiniciado apos desligamento inesperado ($($uncleanEvent.TimeCreated)). Limpando arquivos temporarios corrompidos..."
+        $msg = "[$dataHora] [AVISO BOOT] O computador foi reiniciado apos desligamento inesperado ($($uncleanEvent.TimeCreated)). Limpando arquivos temporarios e cache de shaders..."
         Add-Content -Path $logFile -Value $msg
         Write-Host $msg -ForegroundColor Yellow
         
         Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "$env:LOCALAPPDATA\D3DSCache\*" -Recurse -Force -ErrorAction SilentlyContinue
-    } else {
+    } elseif (-not $werEvent) {
         $msg = "[$dataHora] [BOOT OK] Inicializacao limpa e normal."
         Add-Content -Path $logFile -Value $msg
         Write-Host $msg -ForegroundColor Green
@@ -83,7 +91,7 @@ try {
 }
 
 # 4. GARANTIR FAST STARTUP, HIBERNACAO E SUSPENSAO DESATIVADAS (ANTI-TELA PRETA NO RISER)
-Write-Host "[4/5] Garantindo prevencao contra travamentos de boot e sono (Hiberboot/Suspensao/ASPM)..." -ForegroundColor Yellow
+Write-Host "[4/6] Garantindo prevencao contra travamentos de boot e sono (Hiberboot/Suspensao/ASPM)..." -ForegroundColor Yellow
 try {
     $hibOk = $true
     powercfg /hibernate off 2>$null
@@ -105,8 +113,30 @@ try {
     Write-Host "      -> Requer Administrador para alterar HKLM/energia." -ForegroundColor Yellow
 }
 
-# 5. GARANTIR BLOQUEIO DO SERVICO CONFLITANTE GAMEINPUT
-Write-Host "[5/5] Garantindo bloqueio de servicos conflitantes..." -ForegroundColor Yellow
+# 5. GARANTIR BLINDAGEM DE VIDEO DA GPU RX 7600 (ANTI-BSOD 0x119 / MPO / WINDOWS UPDATE)
+Write-Host "[5/6] Garantindo blindagem da GPU contra Tela Azul 0x119 (MPO e Trava de Driver)..." -ForegroundColor Yellow
+try {
+    if (!(Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm")) { New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Force | Out-Null }
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -Value 5 -Type DWord -Force -ErrorAction Stop
+
+    if (!(Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate")) { New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Force | Out-Null }
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name "ExcludeWUDriversInQualityUpdate" -Value 1 -Type DWord -Force -ErrorAction Stop
+    if (!(Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching")) { New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" -Force | Out-Null }
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" -Name "SearchOrderConfig" -Value 0 -Type DWord -Force -ErrorAction Stop
+
+    if (!(Test-Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers")) { New-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Force | Out-Null }
+    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "TdrDelay" -Value 8 -Type DWord -Force -ErrorAction Stop
+    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "TdrDdiDelay" -Value 8 -Type DWord -Force -ErrorAction Stop
+
+    Add-Content -Path $logFile -Value "[$dataHora] [GPU SHIELD OK] MPO em 5, Drivers WU Bloqueados e TDR Delay em 8s garantidos."
+    Write-Host "      -> Blindagem GPU garantida (MPO=5 desativado, Drivers WU bloqueados, TDR=8s)." -ForegroundColor Green
+} catch {
+    Add-Content -Path $logFile -Value "[$dataHora] [GPU SHIELD] Requer Administrador para gravar chaves de protecao de video em HKLM."
+    Write-Host "      -> Requer Administrador para gravar chaves de protecao de video em HKLM." -ForegroundColor Yellow
+}
+
+# 6. GARANTIR BLOQUEIO DO SERVICO CONFLITANTE GAMEINPUT
+Write-Host "[6/6] Garantindo bloqueio de servicos conflitantes..." -ForegroundColor Yellow
 try {
     $svc = Get-Service -Name "GameInputRedistService" -ErrorAction SilentlyContinue
     if ($svc -and $svc.Status -eq "Running") {

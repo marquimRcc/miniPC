@@ -26,9 +26,9 @@ Se a pasta `miniPC` já estiver no computador, basta dar duplo clique em **`EXEC
 | :--- | :--- | :--- |
 | **Gabinete** | Metalfish T60 (Mini-ITX / SFF) | Cabo extensor (Riser) PCIe 3.0; volume interno reduzido. |
 | **Processador** | AMD Ryzen 5 5600 (6 Cores / 12 Threads) | Em stock atinge 88W e 1.35V+, aquecendo rapidamente sem fluxo direto de ar. |
-| **Placa de Vídeo** | AMD Radeon RX 7600 8GB | Arquitetura RDNA 3 com consumo de 165W-185W; gera calor concentrado no chassis. |
+| **Placa de Vídeo** | AMD Radeon RX 7600 8GB | Arquitetura RDNA 3 com consumo de 165W-185W; sensível a MPO e conflitos de driver. |
 | **Placa-Mãe** | JGINYUE B550i-GAMING (Mini-ITX) | Formato compacto; BIOS atualizada para **`JA500SAM (GEN3)`** (AGESA 1.2.0.F). |
-| **Armazenamento**| SSD XrayDisk 1TB SATA | 100% Saudável (41°C, TRIM ativo, zero setores defeituosos). |
+| **Armazenamento**| SSD NVMe Netac 500GB (C:) + SSD XrayDisk 1TB (Z:) + HDD Toshiba 1TB | 100% Saudáveis, TRIM ativo, NTFS íntegro. |
 | **Memória** | 16 GB DDR4 Corsair (DDR4-3200) | Operando em Single Channel a 2133 MHz (estabilidade de boot). |
 | **Monitor** | 1920x1080 @ 60 Hz | Taxa máxima de exibição de 60 FPS (quadros acima geram puro calor inútil). |
 
@@ -61,7 +61,38 @@ powercfg /setactive SCHEME_CURRENT
 
 ---
 
-## ⚡ 2.1. Instalação dos Drivers Oficiais AMD (Pós-Formatação)
+## 🛡️ 2.1. Blindagem da RX 7600 (Anti-BSOD 0x119 e Trava de Driver do Windows Update)
+
+> [!IMPORTANT]
+> **PREVENÇÃO CONTRA REINÍCIO SOZINHO E TELA AZUL DE VÍDEO:**
+> Se o Windows reiniciar sozinho com o erro `0x00000119 (VIDEO_SCHEDULER_INTERNAL_ERROR)`, a causa é a combinação do recurso **MPO (*Multi-Plane Overlay*)** com o download automático de drivers genéricos pelo **Windows Update**.
+
+Os scripts desta suíte já aplicam e monitoram automaticamente:
+```cmd
+:: 1. Desativa Multi-Plane Overlay (elimina congelamentos em navegadores e Discord)
+reg add "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /t REG_DWORD /d 5 /f
+
+:: 2. Bloqueia o Windows Update de sobrescrever o driver oficial da AMD Radeon
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v ExcludeWUDriversInQualityUpdate /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v SearchOrderConfig /t REG_DWORD /d 0 /f
+
+:: 3. Aumenta tolerância a picos de carga (TDR Delay de 2s para 8s)
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v TdrDelay /t REG_DWORD /d 8 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v TdrDdiDelay /t REG_DWORD /d 8 /f
+```
+
+---
+
+## ⚡ 2.2. Procedimento de Queda de Energia e Demora para Ligar
+
+Se faltar energia na rede elétrica e o Mini PC **demorar muito para dar vídeo**, ligar os coolers a 100% na tela preta ou **desligar sozinho 6 segundos após o boot**:
+1. **Desconecte o cabo de força da tomada por 60 segundos.**
+2. **Pressione e segure o botão Power por 15 segundos** com ele fora da tomada (isso descarrega totalmente a carga estática dos capacitores e reseta a proteção OVP/OCP da fonte SFX e do Super I/O).
+3. **Reconecte e ligue.** Se a placa-mãe entrar em *Memory Training* (treinamento de memória RAM da BIOS AM4), aguarde até 3 minutos na tela preta sem desligar no botão — o sinal de vídeo retornará automaticamente.
+
+---
+
+## ⚡ 2.3. Instalação dos Drivers Oficiais AMD (Pós-Formatação)
 
 Como os utilitários da AMD contêm pacotes pesados de kernel e interface gráfica de calibração, siga esta ordem logo após rodar o script mestre:
 
@@ -145,9 +176,12 @@ Ponto de entrada único pós-formatação com auto-elevação (1 UAC no início)
 Executado após instalar ou formatar o Windows (possui auto-elevação para Administrador). Aplica automaticamente com 1 clique:
 * **[Etapa 1] Desativação Prioritária de Hibernação, Fast Startup e Suspensão Automática** (`powercfg /hibernate off`, `HiberbootEnabled = 0`, `standby-timeout = 0` e `ASPM = 0`).
 * **[Etapa 2] Trava Térmica da CPU em 3.5 GHz:** Desativa o boost agressivo, fixa o estado máximo em 99% e mínimo em 5% (tensão cai para ~0.93V e consumo para 1.5W em repouso).
-* **[Etapa 3] Ativação do Modo de Jogo e Desativação do GameDVR:** Reduz latência e elimina uso do encoder da placa de vídeo em segundo plano.
-* **[Etapa 4] Limpeza e Otimização:** Desativação de widgets, telemetria pesada e limpeza de cache de shaders/DNS.
-* **[Etapa 5] Comando TRIM no SSD SATA.**
+* **[Etapa 3] Blindagem de Vídeo da GPU RX 7600:** Desativação de MPO (`OverlayTestMode = 5`), bloqueio de download de drivers pelo Windows Update (`ExcludeWUDriversInQualityUpdate = 1`) e aumento do TDR Delay para 8s (elimina BSOD 0x119).
+* **[Etapa 4] Ativação do Modo de Jogo e Desativação do GameDVR:** Reduz latência e elimina uso do encoder da placa de vídeo em segundo plano.
+* **[Etapa 5] Verificação de Conflitos:** Desativação do serviço legado GameInput redundante.
+* **[Etapa 6] Registro do Atalho de Auto-Reparo:** Configuração na pasta Startup do usuário para persistência contra updates do Windows.
+* **[Etapa 7] Limpeza e Otimização:** Desativação de widgets, telemetria pesada e limpeza de cache de shaders/DNS.
+* **[Etapa 8] Comando TRIM Dinâmico nos SSDs detectados.**
 
 ### 2. `Instalar_Programas_Automatico.bat` / `.ps1`
 Instalador automático e 100% silencioso para pós-formatação. Instala todos os softwares essenciais via Winget e baixa/instala automaticamente os drivers e utilitários oficiais da AMD:
@@ -161,4 +195,7 @@ Instalador automático e 100% silencioso para pós-formatação. Instala todos o
 * *Recurso inteligente:* Verifica se o aplicativo já existe antes de baixar, pulando itens já presentes e exibindo resumo final.
 
 ### 3. `Verificar_Reparar_Inicializacao.bat` / `.ps1`
-Executa uma bateria de testes diagnósticos no sistema verificando integridade do volume C: (SpotFix), status da RX 7600, garantia de Fast Startup em 0 e logs de encerramento inesperado.
+Executa uma bateria de testes diagnósticos no sistema a cada boot: integridade dos volumes NTFS (SpotFix), status da RX 7600, garantia de Fast Startup em 0, garantia de MPO em 5 e trava de drivers WU, detecção de telas azuis (`WER ID 1001`) e limpeza de cache corrompido pós-queda.
+
+### 4. `Validar_Otimizacoes_SFF.bat` / `.ps1`
+Painel completo de validação que checa em tempo real se o plano térmico, a trava de boost, o modo de jogo, o Fast Startup, a blindagem de MPO, o bloqueio do Windows Update e a saúde dos volumes estão 100% ativos e saudáveis.

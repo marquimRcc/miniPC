@@ -16,7 +16,11 @@
 * **Processador:** AMD Ryzen 5 5600 (6 Cores / 12 Threads, TDP 65W, Zen 3 Vermeer).
   * Sem vídeo integrado (sem iGPU) — Toda imagem depende 100% da placa dedicada.
 * **Placa de Vídeo:** AMD Radeon RX 7600 8GB (Navi 33, 8GB GDDR6 Samsung, Barramento 128-bit, PCIe 4.0 x8 nativo).
-* **Armazenamento:** SSD XrayDisk 1TB SATA (Saúde 100% Healthy, 41°C, TRIM ativo, zero erros).
+* **Armazenamento:**
+  * **SSD NVMe M.2 (Sistema C:):** Netac NVMe SSD 500GB (PCIe M.2, 100% Healthy, drive principal de boot do Windows).
+  * **SSD SATA Secundário:** XrayDisk 1TB SATA (100% Healthy, 41°C, TRIM ativo).
+  * **HDD SATA Secundário:** Toshiba MQ04ABF100 1TB SATA (100% Healthy, armazenamento secundário/backup).
+  * Volumes lógicos: `C:` (Sistema Operacional) e `Z:` (Dados/Jogos).
 * **Rede:** Realtek 2.5 GbE onboard | Módulo Wi-Fi interno M.2/PCIe **REMOVIDO** | Wi-Fi via adaptador USB externo.
 * **Monitor:** Samsung C24F390 Curvo (1080p @ 60 Hz, suporte a AMD FreeSync).
 
@@ -52,6 +56,27 @@ Ao inspecionar diretamente as propriedades de hardware do barramento PCIe no Win
 ### Causa 3: Módulo Wi-Fi Interno M.2
 * O módulo Wi-Fi interno causava conflitos no barramento PCIe da placa-mãe.
 * **Solução:** Módulo removido fisicamente; Wi-Fi agora opera via adaptador USB.
+
+### Causa 4: Tela Azul BSOD 0x119 (VIDEO_SCHEDULER_INTERNAL_ERROR) e Reinício Automático
+Ao analisar o histórico de falhas do Windows Error Reporting (`WER-SystemErrorReporting ID 1001`), foram identificados eventos recorrentes de bugcheck `0x00000119` (parâmetro `0x5`):
+* **Sintoma:** O PC reinicia sozinho de forma inesperada durante tarefas cotidianas (navegação na web, vídeos, Discord, alternância de janelas).
+* **Mecanismo da Falha:**
+  1. **Conflito de MPO (*Multi-Plane Overlay*):** O recurso nativo do Windows 11 para compor planos visuais acelerados por GPU apresenta instabilidade conhecida na arquitetura AMD RDNA 2/3 (RX 7600). Ao transitar janelas baseadas em Chromium com aceleração de hardware ativa, ocorre estouro de tempo (*fence timeout*) no agendador de GPU (`dxgkrnl.sys`).
+  2. **Interferência do Windows Update:** O Windows Update baixa drivers gráficos genéricos em segundo plano (`wuaucltcore.exe`), sobrescrevendo bibliotecas do **AMD Software: Adrenalin** oficial e quebrando a sincronia das chamadas DirectX.
+* **Solução Integrada nos Scripts:**
+  * Desativação do MPO no DWM: `reg add "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /t REG_DWORD /d 5 /f`
+  * Bloqueio do Windows Update para drivers: `reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v ExcludeWUDriversInQualityUpdate /t REG_DWORD /d 1 /f`
+  * Extensão do TDR Delay para 8s: `reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v TdrDelay /t REG_DWORD /d 8 /f`
+
+### Causa 5: Quedas Abruptas de Energia e Demora para Ligar (Loop de Boot / Tela Preta)
+Ao investigar desligamentos bruscos por falta de energia na rede (`Kernel-Power ID 41`, `BugcheckCode 0`), observou-se que o PC levava muitos minutos para religar ou desligava sozinho 6 a 7 segundos após iniciar o Windows:
+* **Mecanismo da Falha:**
+  1. **Proteção de Subtensão/Transientes na Fonte SFX 600W:** Ao retornar a luz, a rede elétrica sofre oscilações transitórias. Fontes compactas possuem circuitos de proteção sensíveis (OVP/UVP/OCP). Quando o Windows inicia o carregamento de drivers de GPU e o Ryzen sai do estado idle (aos 6-7s de boot), a demanda instantânea de corrente faz a fonte desarmar se houver instabilidade ou carga residual retida.
+  2. **Memory Training na BIOS AM4 (JGINYUE B550i):** Desligamentos no estágio inicial de inicialização forçam a placa-mãe a entrar em ciclo de retreinamento de memória DDR4 (*Memory Training*). A placa liga os coolers, mas permanece sem enviar sinal de vídeo (tela preta) por 2 a 5 minutos antes de restabelecer o POST.
+* **Procedimento Físico de Recuperação Rápida:**
+  1. Desconecte o cabo de força da tomada por **60 segundos**.
+  2. Pressione e segure o botão **Power por 15 segundos** (drena totalmente a carga estática dos capacitores da placa-mãe e reseta os circuitos de proteção da fonte).
+  3. Reconecte o cabo firmemente e ligue o computador.
 
 ---
 
@@ -101,12 +126,15 @@ Perfil 100% testado, estável e livre de artefatos visuais:
 
 ---
 
-## 6. Saúde do SSD (XrayDisk 1TB SATA)
+## 6. Saúde do Armazenamento (SSD NVMe Netac + SSD XrayDisk + HDD Toshiba)
 
-* **Status:** `Healthy (Saudável)`
-* **Temperatura:** `41 °C`
-* **Erros de Leitura / Setores Defeituosos:** `0 erros` nos logs do sistema
-* **Comando TRIM:** `Ativo (DisableDeleteNotify = 0)`
+* **SSD Netac NVMe 500GB (Volume C: Windows):**
+  * **Status:** `Healthy (Saudável)` / Zero setores defeituosos / 100% íntegro no NTFS.
+* **SSD XrayDisk 1TB SATA (Volume Z: Dados):**
+  * **Status:** `Healthy (Saudável)` / Temperatura média: `41 °C` / Zero erros de leitura.
+* **HDD Toshiba MQ04ABF100 1TB SATA:**
+  * **Status:** `Healthy (Saudável)` / Operando normalmente.
+* **Comando TRIM:** Ativo em todas as unidades de estado sólido (`Optimize-Volume -ReTrim`).
 
 ---
 
@@ -121,4 +149,18 @@ Toda vez que a BIOS for regravada ou o CMOS for resetado, o seguinte procediment
    * **`Re-Size BAR Support`**: mudar para **`Auto`** ou **`Enabled`** *(ativa o AMD Smart Access Memory de 8GB)*
 4. Verifique se o menu disponibiliza a seleção de velocidade PCIe (*Link Speed*) e force em **`Gen3`**.
 5. Pressione **`F10`** e confirme com **Enter** para salvar e reiniciar.
+
+---
+
+## 8. Blindagem de Vídeo e Resumo de Parâmetros de Estabilidade
+
+| Parâmetro de Sistema | Chave / Registro | Valor Aplicado | Finalidade |
+| :--- | :--- | :--- | :--- |
+| **Desativação MPO** | `HKLM:\SOFTWARE\Microsoft\Windows\Dwm` | `OverlayTestMode = 5` | Elimina BSOD `0x119` na RX 7600 em navegadores/Discord |
+| **Bloqueio Driver WU** | `HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate` | `ExcludeWUDriversInQualityUpdate = 1` | Impede o Windows de sobrescrever o driver da AMD |
+| **Driver Searching** | `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching` | `SearchOrderConfig = 0` | Desativa busca automática de drivers na nuvem |
+| **GPU TDR Delay** | `HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers` | `TdrDelay = 8` / `TdrDdiDelay = 8` | Dá 8 segundos de tolerância contra falsos travamentos de GPU |
+| **Fast Startup** | `HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power` | `HiberbootEnabled = 0` | Evita corrupção híbrida e tela preta no boot |
+| **Suspensão PCIe** | `SCHEME_CURRENT` (`SUB_PCIEXPRESS`) | `ASPM = 0` | Previne queda de sinal PCIe ao acordar no cabo riser |
+
 

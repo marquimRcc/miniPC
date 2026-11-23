@@ -37,3 +37,22 @@ Get-WinEvent -FilterHashtable @{LogName='System'; StartTime=$cutoff} -ErrorActio
 
 Write-Host "`n=== 6. VERIFICACAO DE DWM (Desktop Window Manager) ==="
 Get-Process -Name dwm -ErrorAction SilentlyContinue | Format-Table -AutoSize Id, ProcessName, WorkingSet64, Responding
+
+Write-Host "`n=== 7. BLINDAGEM DE VIDEO E REGISTRO (MPO, WU DRIVERS, TDR) ==="
+$mpoVal = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Dwm" -Name "OverlayTestMode" -ErrorAction SilentlyContinue).OverlayTestMode
+$wuVal  = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name "ExcludeWUDriversInQualityUpdate" -ErrorAction SilentlyContinue).ExcludeWUDriversInQualityUpdate
+$tdrVal = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name "TdrDelay" -ErrorAction SilentlyContinue).TdrDelay
+Write-Host "MPO OverlayTestMode : $(if ($mpoVal -eq 5) { '5 (DESATIVADO - OK)' } else { "$mpoVal (ATIVO - ALERTA)" })"
+Write-Host "WU ExcludeDrivers   : $(if ($wuVal -eq 1) { '1 (BLOQUEADO - OK)' } else { "$wuVal (PERMITIDO - ALERTA)" })"
+Write-Host "Graphics TdrDelay   : $(if ($tdrVal) { "$tdrVal segundos" } else { "Padrao (2 segundos)" })"
+
+Write-Host "`n=== 8. HISTORICO DE TELAS AZUIS / CRASHES DE VIDEO (Ultimos 5 dias) ==="
+$werEvents = Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Microsoft-Windows-WER-SystemErrorReporting'; StartTime=(Get-Date).AddDays(-5)} -ErrorAction SilentlyContinue
+if ($werEvents) {
+    foreach ($we in $werEvents) {
+        $p1 = $we.Properties[0].Value
+        Write-Host "[$($we.TimeCreated)] BSOD Detectado: $p1" -ForegroundColor $(if ($p1 -match "0x00000119") { "Red" } else { "Yellow" })
+    }
+} else {
+    Write-Host "Nenhum evento de tela azul (Bugcheck 1001) registrado nos ultimos 5 dias." -ForegroundColor Green
+}
