@@ -4,11 +4,19 @@ Repositório dedicado à suíte de scripts, diagnósticos e parametrizações de
 
 > 📖 **[Clique aqui para ler o Relatório Técnico Consolidado de Hardware (Metalfish T60)](ANALISE_TECNICA_HARDWARE.md)** com todo o histórico de testes, diagnósticos de boot, memória, riser PCIe 3.0 e benchmarks térmicos.
 
-**Foco primordial:** **Eliminação definitiva de telas pretas no boot**, **baixíssimas temperaturas**, prevenção contra quedas de tensão e estabilidade máxima do Windows 11.
+---
+
+> [!TIP]
+> ## ⚡ COMANDO ÚNICO PÓS-FORMATAÇÃO (1 CLIQUE)
+> Ao instalar ou formatar o Windows, abra o **PowerShell** (`Win + X` ➔ *Terminal*) e cole:
+> ```powershell
+> irm raw.githubusercontent.com/marquimRcc/miniPC/main/pos_formatacao_full.ps1 | iex
+> ```
+> *Baixa o repositório, pede 1 UAC, instala programas/drivers oficiais AMD, aplica todas as travas térmicas e blindagens contra telas pretas/azuis e configura o comando global `pos_formatacao_full`.*
 
 ---
 
-## ⚡ 0. Início Rápido Pós-Formatação (Comando Único)
+## ⚡ 0. Instruções de Execução
 
 ### Opção A: Ao Formatar o PC (Windows Limpo)
 Abra o **PowerShell** ou **Terminal** (`Win + X` → *Terminal*) e cole **apenas esta linha**:
