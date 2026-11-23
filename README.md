@@ -8,15 +8,30 @@ Repositório dedicado à suíte de scripts, diagnósticos e parametrizações de
 
 ---
 
-## ⚡ 0. Início Rápido Pós-Formatação (1 Comando / 1 UAC)
+## ⚡ 0. Início Rápido Pós-Formatação (Comando Único)
 
-Logo após instalar o Windows, abra o **Terminal (Admin)** (`Win + X` → *Terminal (Administrador)*) e cole **apenas esta linha** para baixar o repositório e executar todas as etapas em sequência automática com **1 único UAC**:
+### Opção A: Ao Formatar o PC (Windows Limpo)
+Abra o **PowerShell** ou **Terminal** (`Win + X` → *Terminal*) e cole **apenas esta linha**:
 
 ```powershell
-$d="$env:USERPROFILE\miniPC"; irm "https://github.com/marquimRcc/miniPC/archive/refs/heads/main.zip" -OutFile "$env:TEMP\m.zip"; Expand-Archive "$env:TEMP\m.zip" "$env:TEMP\m" -Force; New-Item -ItemType Directory -Force $d | Out-Null; Copy-Item "$env:TEMP\m\miniPC-main\*" $d -Recurse -Force; Remove-Item "$env:TEMP\m.zip","$env:TEMP\m" -Recurse -Force; & "$d\EXECUTAR_TUDO.bat"
+irm raw.githubusercontent.com/marquimRcc/miniPC/main/pos_formatacao_full.ps1 | iex
 ```
 
-Se a pasta `miniPC` já estiver no computador, basta dar duplo clique em **`EXECUTAR_TUDO.bat`** (que executa otimizações, instalador de programas/drivers AMD, auto-reparo, validação e diagnóstico de vídeo em sequência, salvando tudo em `Logs\Setup_Completo.log`).
+> **O que essa linha faz automaticamente:**
+> 1. Pede elevação de Administrador (1 único UAC).
+> 2. Baixa e extrai a suíte completa em `%USERPROFILE%\miniPC`.
+> 3. Registra o comando global permanente **`pos_formatacao_full`** no Windows.
+> 4. Executa em sequência contínua: otimizações térmicas, blindagem contra telas azuis/pretas, instalador de programas e drivers oficiais AMD, auto-reparo e diagnóstico final.
+
+---
+
+### Opção B: Computador Já Configurado
+Se o repositório já estiver baixado na máquina, você pode executar de qualquer diretório digitando apenas:
+
+```cmd
+pos_formatacao_full
+```
+*(Ou dar duplo clique em `pos_formatacao_full.bat` ou `EXECUTAR_TUDO.bat` dentro da pasta).*
 
 ---
 
